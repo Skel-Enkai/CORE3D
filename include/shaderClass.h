@@ -16,8 +16,8 @@ class Shader
 
 		void Activate();
 		void Delete();
-private:
-	void compilerErrors(unsigned int shader, const char* type);
+	private:
+		void logErrors(unsigned int object, const char* type);
 };
 
 #endif 

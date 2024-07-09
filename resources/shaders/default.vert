@@ -6,7 +6,6 @@ layout (location = 2) in vec3 aNormal;
 layout (location = 3) in vec2 aTex;
 
 out vec3 currentPos;
-out vec3 color;
 out vec3 Normal;
 out vec2 texCoord;
 
@@ -18,7 +17,6 @@ uniform mat4 rotation;
 void main()
 { 
 	currentPos = vec3(model * rotation * vec4(aPos, 1.0f));
-	color = aColor;
 	Normal = vec3(rotation * vec4(aNormal, 1.0f));
 	texCoord = aTex;
 	 
