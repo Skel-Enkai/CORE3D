@@ -72,27 +72,24 @@ void Shader::Delete()
 
 void Shader::logErrors(unsigned int object, const char* type)
 {
-	GLint hasCompiled;
-	GLint hasLinked;
+	GLint hasSucceeded;
 	char infoLog[1024];
 	if (strcmp(type,"PROGRAM") != 0)
 	{
-		glGetShaderiv(object, GL_COMPILE_STATUS, &hasCompiled);
-		if (hasCompiled == GL_FALSE)
+		glGetShaderiv(object, GL_COMPILE_STATUS, &hasSucceeded);
+		if (hasSucceeded == GL_FALSE)
 		{
 			glGetShaderInfoLog(object, 1024, NULL, infoLog);
-			std::cout << "SHADER_COMPILATION_ERROR for:" << type << std::endl;
-			std::cout << infoLog << "\n" << std::endl;
+			std::cout << "SHADER_COMPILATION_ERROR for: " << type << "\n" << infoLog << std::endl;
 
 		}	
 	}
 	else 
-	{	glGetProgramiv(object, GL_LINK_STATUS, &hasLinked);
-		if (hasLinked == GL_FALSE)
+	{	glGetProgramiv(object, GL_LINK_STATUS, &hasSucceeded);
+		if (hasSucceeded == GL_FALSE)
 		{
 			glGetProgramInfoLog(object, 1024, NULL, infoLog);
-			std::cout << "SHADER_LINKING_ERROR for:" << type << std::endl;
-			std::cout << infoLog << "\n" << std::endl;
+			std::cout << "SHADER_LINKING_ERROR for: " << type << "\n" << infoLog << std::endl;
 		}
 	}
 }
