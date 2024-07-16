@@ -46,7 +46,7 @@ vec4 pointLight()
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
 	
-	//Display distance zones
+	// Display distance zones
 //	if (dist > 2.0f) {
 //	return vec4(0.0f, 1.0f, 0.0f, 1.0f);
 //	}
@@ -72,14 +72,21 @@ vec4 directLight()
 	float diffuse = max(dot(normal, -lightDirection), 0.0f);
 
 	// Specular lighting
-	float specularLight = 0.25f;
+	float specularLight = 1.0f;
 	vec3 viewDirection = normalize(camPos -currentPos);
 	vec3 reflectionDirection = reflect(lightDirection, normal);
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
 
+//  if (normal.y > 0.8)
+//    return vec4(0.0, 1.0, 0.0, 1.0);
+//  if (normal.x > 0.8)
+//    return vec4(1.0, 0.0, 0.0, 1.0);
+//  if (normal.z > 0.8)
+//    return vec4(0.0, 0.0, 1.0, 1.0);
+
 	// Outputs the final calcualted color
-	return texture(diffuse0, texCoord) * lightColor * (diffuse + ambient) + texture(specular0, texCoord).r * specular;
+   return texture(diffuse0, texCoord) * lightColor * (diffuse + ambient) + texture(specular0, texCoord).r * specular;
 	
 }
 

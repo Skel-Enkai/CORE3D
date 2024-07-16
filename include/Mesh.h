@@ -4,6 +4,7 @@
 #include"VAO.h"
 #include"Camera.h"
 #include"Texture.h"
+#include "glm/fwd.hpp"
 
 class Mesh
 {

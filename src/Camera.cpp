@@ -12,14 +12,10 @@ Camera::Camera(int width, int height, glm::vec3 position)
 
 void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane)
 {
-	// Initialises matrices as the Identity Matrix
-	glm::mat4 view = glm::mat4(1.0f);
-	glm::mat4 projection = glm::mat4(1.0f);
-
 	// Forms a view matrix from a Position(Eye), a Direction(Center) and an Orientation(Which way is Up)
-	view = glm::lookAt(Position, Position + Orientation, Up);
+  glm::mat4 view = glm::lookAt(Position, Position + Orientation, Up);
 	// Forms the perspective matrix with a FOV, a canvas size, nearPlan and farPlane 
-	projection = glm::perspective(glm::radians(FOVdeg), (float)(width/height), nearPlane, farPlane);
+  glm::mat4 projection = glm::perspective(glm::radians(FOVdeg), (float)(width/height), nearPlane, farPlane);
 
 	// Sets new camera matrix
 	cameraMatrix = projection * view;

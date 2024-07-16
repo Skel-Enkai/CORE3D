@@ -1,18 +1,22 @@
-#include"Model.h"
+#include "Model.h"
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/gtc/quaternion.hpp"
 #include <glm/ext/vector_float4.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-Model::Model(const char* file, glm::vec3 scale)
+Model::Model(const char* file, glm::vec3 scale, glm::vec3 translation, glm::quat rotation)
 {
 	std::string text = get_file_contents(file);
 	JSON = json::parse(text);
 
 	Model::file = file;
 	data = getData();
-	
+
+  modelRotation = rotation;
 	// 0 is the index of the base node of the json tree
 	glm::mat4 initM = glm::scale(glm::mat4(1.0f), scale);
+  initM = glm::translate(initM, translation);
 	traverseNode(0, initM);
 }
 
@@ -57,13 +61,14 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 		translation = glm::make_vec3(transValues);
 	}
 	// find rotation
-	glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+	glm::quat rotation = modelRotation;
 	if (node.find("rotation") != node.end())
 	{
 		float rotValues[4];
 		for (unsigned int i = 0; i < node["rotation"].size(); i++)
 			rotValues[i] = (node["rotation"][i]);
-		rotation = glm::make_quat(rotValues);
+    glm::quat temp  = glm::make_quat(rotValues);
+    rotation = rotation * temp;
 	}
 	// find scale
 	glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -87,8 +92,10 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 	glm::mat4 trans = glm::translate(glm::mat4(1.0f), translation);
 	glm::mat4 rot = glm::mat4_cast(rotation);
 	glm::mat4 sca = glm::scale(glm::mat4(1.0f), scale);
-
-	glm::mat4 matNextNode = matrix * matNode * trans * rot * sca;
+  
+  // removed matrix field import, as it added rotations which mess up normals
+  // To Do: Read about the Matrix field in glTF and what is the expected transformations
+	glm::mat4 matNextNode = matrix  * trans;
 
 	if (node.find("mesh") != node.end())
 	{
@@ -164,9 +171,18 @@ std::vector<GLuint> Model::getIndices(json accessor)
 	unsigned int componentType = accessor["componentType"];
 
 	json bufferView = JSON["bufferViews"][buffViewInd];
-	unsigned int byteOffset = bufferView["byteOffset"];
-	
-	unsigned int beginningOfData  = byteOffset + accByteOffset;
+
+  unsigned int beginningOfData;
+
+  if (bufferView.contains("byteOffset"))
+  {
+  	unsigned int byteOffset = bufferView["byteOffset"];
+	  beginningOfData  = byteOffset + accByteOffset;
+  }
+  else 
+  {
+    beginningOfData = accByteOffset;  
+  }
 	// 5125 == unsigned integer | 4 bytes
 	if (componentType == 5125)
 	{

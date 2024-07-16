@@ -8,11 +8,14 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include "glm/ext/quaternion_trigonometric.hpp"
 
 #include"Model.h"
 
-const unsigned int width = 2160;
-const unsigned int height = 2160;
+const unsigned int width = 800;
+const unsigned int height = 800;
+int mac_width, mac_height;
 
 int main() 
 {	
@@ -44,13 +47,15 @@ int main()
 	// Load GLAD so it configures OpenGL
 	gladLoadGL();
 	
+	glfwGetFramebufferSize(window, &mac_width, &mac_height);
 	// Specify the viewport of OpenGL in the Window 
 	// In this case the viewport goes from x = 0, y = 0, to x = 800, y = 800
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, mac_width, mac_height);
 
 
 	std::string shaderPath = "resources/shaders/";
 	Shader shaderProgram((shaderPath + "default.vert").c_str(), (shaderPath + "default.frag").c_str());
+	//Shader shaderProgram1((shaderPath + "default.vert").c_str(), (shaderPath + "default.frag").c_str());
 
 	// Generate light colour and position
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -69,8 +74,12 @@ int main()
 	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
 
 	std::string modelPath = "resources/models/";
-	Model model((modelPath + "bunny/scene.gltf").c_str());
 
+  glm::quat shipRot = glm::angleAxis(-1.5708f, glm::vec3(1.0, 0.0, 0.0));
+	Model spaceship((modelPath + "spaceship/scene.gltf").c_str(), glm::vec3(0.5, 0.5, 0.5), glm::vec3(0.0, 0.0, -5.0), shipRot);
+  Model bunny((modelPath + "bunny/scene.gltf").c_str(), glm::vec3(15.0, 15.0, 15.0), glm::vec3(0.8, 0.0, -0.5));
+  glm::quat swordRot = glm::angleAxis(0.785398f, glm::vec3(0.0, 0.0, 1.0));
+  Model sword((modelPath + "sword/scene.gltf").c_str(), glm::vec3(0.05, 0.05, 0.05), glm::vec3(0.0, 0.0, -12.0), swordRot);
 
 	// Main while loop 
 	while(!glfwWindowShouldClose(window))
@@ -83,8 +92,10 @@ int main()
 		camera.Inputs(window);
 		// Calls Matrix function of Camera object to set the Camera view in the shaderProgram
 		camera.updateMatrix(45.0f, 0.1f, 100.0f);
-			
-		model.Draw(shaderProgram, camera);
+    
+    spaceship.Draw(shaderProgram, camera); 
+		sword.Draw(shaderProgram, camera);
+    bunny.Draw(shaderProgram, camera);
 
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events

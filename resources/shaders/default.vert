@@ -21,14 +21,13 @@ uniform mat4 scale;
 // then flip on the x-axis (only works for values within the specified y-range)
 // I hand computed this and feel very proud :D
 const mat3 coordinateTransformMatrix = mat3(vec3(1.0, 0.0, 0.0), 
-					    vec3(0.0, -1.0, 0.0),
-					    vec3(0.0, 1.0, 1.0));
+					                                  vec3(0.0,-1.0, 0.0),
+					                                  vec3(0.0, 1.0, 1.0));
 
 void main()
 {	
-	currentPos = vec3(completeMatrix * vec4(aPos, 1.0));
+	currentPos = vec3(completeMatrix * scale * rotation * vec4(aPos, 1.0));
 
-	//Normal = aNormal;
 	Normal = vec3(rotation * vec4(aNormal, 1.0));
 
 	// Solved tutorial issue, by translating the format from gltf standard to glm, by using the coordinatesTransformMatrix
