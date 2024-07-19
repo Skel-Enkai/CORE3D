@@ -120,8 +120,31 @@ vec4 spotLight()
 	return texture(diffuse0, texCoord) * lightColor * (diffuse * intensity + ambient) + texture(specular0, texCoord).r * specular * intensity;
 }
 
+float near = 0.1f;
+float far = 100.0f;
+
+// linearize the F-Depth formula: F_depth= (1/z- 1/near)/(1/far - 1/near);
+float linearizeDepth(float depth)
+{
+  return (2.0 * near * far) / (far + near -(depth * 2.0 - 1.0) * (far - near));
+}
+
+// steepness: controls how quickly the depth value varies
+// offset: controls which set value of distance depth is halfway done, (which distance represents the depth value 0.5f)
+float logisticDepth(float depth, float steepness = 0.5f, float offset = 5.0f)
+{
+  float zVal = linearizeDepth(depth);
+  return (1 / (1 + exp(-steepness * (zVal - offset))));
+}
 
 void main()
 {
 	FragColor = directLight();
+
+  // Basic Fog Lighting
+  //float depth = logisticDepth(gl_FragCoord.z);
+  //FragColor = directLight() * (1.0f - depth) + vec4(depth * vec3(0.85f, 0.85f, 0.90f), 1.0f);
+
+  // FUNKY SHIT: THE COMMA DOIN SOMETHIN
+  //FragColor = vec4(directLight().x/2, 0.0f, 0.0f, 1.0f) * (1.0f, - depth) + vec4(depth * vec3(0.85f, 0.85f, 0.90f), 1.0f);
 }

@@ -4,6 +4,7 @@
 #include <glm/ext/vector_float4.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <string>
 
 Model::Model(const char* file, glm::vec3 scale, glm::vec3 translation, glm::quat rotation)
 {
@@ -80,6 +81,11 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 		scale = glm::make_vec3(scaleValues);
 	}
 	// find general matrix transformation
+  // contains translation, rotation and scale properties
+  /* Therefore is problematic for calculating normal positions
+   * as rotation could be applied to model as well as translation 
+   * which is not seperatable to find the normal rotation.
+   * Ignore this property unless using normal maps. */
 	glm::mat4 matNode = glm::mat4(1.0f);
 	if (node.find("matrix") != node.end())
 	{
@@ -93,9 +99,9 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 	glm::mat4 rot = glm::mat4_cast(rotation);
 	glm::mat4 sca = glm::scale(glm::mat4(1.0f), scale);
   
-  // removed matrix field import, as it added rotations which mess up normals
-  // To Do: Read about the Matrix field in glTF and what is the expected transformations
-	glm::mat4 matNextNode = matrix  * trans;
+  // If using normal maps insert general matrix transformation here ->
+  // glm::mat4 matNextNode = matNode * matrix;
+	glm::mat4 matNextNode = matrix;
 
 	if (node.find("mesh") != node.end())
 	{
@@ -243,14 +249,14 @@ std::vector<Texture> Model::getTextures()
 		}
 		if (!skip)
 		{
-			if (texPath.find("baseColor") != std::string::npos)
+			if ((texPath.find("baseColor") != std::string::npos) or (texPath.find("diffuse") != std::string::npos))
 			{
 				Texture diffuse = Texture((fileDirectory + texPath).c_str(), "diffuse", loadedTex.size());
 				textures.push_back(diffuse);
 				loadedTex.push_back(diffuse);
 				loadedTexName.push_back(texPath);
 			}
-			else if (texPath.find("metallicRoughness") != std::string::npos)
+			else if (texPath.find("metallicRoughness") != std::string::npos or texPath.find("specular") != std::string::npos)
 			{
 				Texture specular = Texture((fileDirectory + texPath).c_str(), "specular", loadedTex.size());
 				textures.push_back(specular);

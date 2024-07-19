@@ -51,7 +51,8 @@ void Texture::texUnit(Shader& shader, const char* uniform, GLuint unit)
 {
 	
 	GLuint texUni = glGetUniformLocation(shader.ID, uniform);
-	shader.Activate();
+  // Removing redundant call to Activate() as already activated in the Mesh class.
+	/*shader.Activate();*/
 	glUniform1i(texUni, unit);
 }
 
