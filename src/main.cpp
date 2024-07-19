@@ -13,8 +13,8 @@
 
 #include"Model.h"
 
-const unsigned int width = 800;
-const unsigned int height = 800;
+const unsigned int width = 4000;
+const unsigned int height = 2000;
 int mac_width, mac_height;
 
 int main() 
@@ -43,7 +43,7 @@ int main()
 	}
 	// Introduce the window into the current context
 	glfwMakeContextCurrent(window);
-	
+
 	// Load GLAD so it configures OpenGL
 	gladLoadGL();
 	
@@ -55,7 +55,7 @@ int main()
 
 	std::string shaderPath = "resources/shaders/";
 	Shader shaderProgram((shaderPath + "default.vert").c_str(), (shaderPath + "default.frag").c_str());
-	//Shader shaderProgram1((shaderPath + "default.vert").c_str(), (shaderPath + "default.frag").c_str());
+	Shader outliningProgram((shaderPath + "outlining.vert").c_str(), (shaderPath + "outlining.frag").c_str());
 
 	// Generate light colour and position
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -67,35 +67,54 @@ int main()
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
+  outliningProgram.Activate();
+  glUniform1f(glGetUniformLocation(outliningProgram.ID, "outlining"), 0.06f);
+
 	// Stops behind layers from displaying during animation (Tests for depth continiously)
 	glEnable(GL_DEPTH_TEST);
+  glEnable(GL_STENCIL_TEST);
+  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	// Initialises Camera Object with resolution and position 
 	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
 
 	std::string modelPath = "resources/models/";
 
-  glm::quat shipRot = glm::angleAxis(-1.5708f, glm::vec3(1.0, 0.0, 0.0));
+	glm::quat shipRot = glm::angleAxis(-1.5708f, glm::vec3(1.0, 0.0, 0.0));
 	Model spaceship((modelPath + "spaceship/scene.gltf").c_str(), glm::vec3(0.5, 0.5, 0.5), glm::vec3(0.0, 0.0, -5.0), shipRot);
-  Model bunny((modelPath + "bunny/scene.gltf").c_str(), glm::vec3(15.0, 15.0, 15.0), glm::vec3(0.8, 0.0, -0.5));
-  glm::quat swordRot = glm::angleAxis(0.785398f, glm::vec3(0.0, 0.0, 1.0));
-  Model sword((modelPath + "sword/scene.gltf").c_str(), glm::vec3(0.05, 0.05, 0.05), glm::vec3(0.0, 0.0, -12.0), swordRot);
+	/*Model bunny((modelPath + "bunny/scene.gltf").c_str(), glm::vec3(15.0, 15.0, 15.0), glm::vec3(0.8, 0.0, -0.5));*/
+	/*glm::quat swordRot = glm::angleAxis(0.785398f, glm::vec3(0.0, 0.0, 1.0));*/
+	/*Model sword((modelPath + "sword/scene.gltf").c_str(), glm::vec3(0.05, 0.05, 0.05), glm::vec3(0.0, 0.0, -12.0), swordRot);*/
+  /*Model ground((modelPath + "ground/scene.gltf").c_str(), glm::vec3(1.0, 1.0, 1.0), glm::vec3(0.0, -5.0, 0.0));*/
+  /*Model trees((modelPath + "trees/scene.gltf").c_str(), glm::vec3(1.0, 1.0, 1.0), glm::vec3(0.0, -5.0, 0.0));*/
+  Model bigsword((modelPath + "stylized_big_sword/scene.gltf").c_str());
 
 	// Main while loop 
 	while(!glfwWindowShouldClose(window))
- 	{
+  {
 		// Specify the colour of the background
-		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClearColor(0.45f, 0.45f, 0.50f, 1.0f);
 		// Clean the back buffer and assign the new colour to it
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		// Gets Input to move the camera
 		camera.Inputs(window);
 		// Calls Matrix function of Camera object to set the Camera view in the shaderProgram
-		camera.updateMatrix(45.0f, 0.1f, 100.0f);
-    
-    spaceship.Draw(shaderProgram, camera); 
-		sword.Draw(shaderProgram, camera);
-    bunny.Draw(shaderProgram, camera);
+	  camera.updateMatrix(45.0f, 0.1f, 100.0f);
+
+    // Draw Everything
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    spaceship.Draw(shaderProgram, camera);
+    bigsword.Draw(shaderProgram, camera);
+
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    spaceship.Draw(outliningProgram, camera);
+    bigsword.Draw(outliningProgram, camera);
+
+    /*bigsword.Draw(shaderProgram, camera);*/
+    /*sword.Draw(shaderProgram, camera);*/
+    /*bunny.Draw(shaderProgram, camera);*/
+    /*trees.Draw(shaderProgram, camera);*/
+    /*ground.Draw(shaderProgram, camera);*/
 
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events
