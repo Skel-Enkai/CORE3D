@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -9,13 +10,35 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include "glm/ext/quaternion_trigonometric.hpp"
+#include <string>
+/*#include "glm/ext/quaternion_trigonometric.hpp"*/
 
 #include"Model.h"
+#include "glm/geometric.hpp"
 
 const unsigned int width = 4000;
 const unsigned int height = 2000;
 int mac_width, mac_height;
+
+const unsigned int numWindows = 10;
+glm::vec3 positionsWin[numWindows];
+float rotationsWin[numWindows];
+
+unsigned int drawOrder[numWindows];
+float distanceCamera[numWindows];
+
+// returns random float between 0.0f and 1.0f 
+float randomFloat()
+{
+    return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+}
+
+int compareDist(const void* a, const void* b)
+{
+  float diff = distanceCamera[*(int*)b] - distanceCamera[*(int*)a];
+  // returns the farthest one first
+  return (diff > 0) - (diff < 0);
+}
 
 int main() 
 {	
@@ -55,7 +78,8 @@ int main()
 
 	std::string shaderPath = "resources/shaders/";
 	Shader shaderProgram((shaderPath + "default.vert").c_str(), (shaderPath + "default.frag").c_str());
-	Shader outliningProgram((shaderPath + "outlining.vert").c_str(), (shaderPath + "outlining.frag").c_str());
+	Shader grassProgram((shaderPath + "default.vert").c_str(), (shaderPath + "grass.frag").c_str());
+  Shader windowProgram((shaderPath + "default.vert").c_str(), (shaderPath + "windows.frag").c_str());
 
 	// Generate light colour and position
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -67,54 +91,97 @@ int main()
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
-  outliningProgram.Activate();
-  glUniform1f(glGetUniformLocation(outliningProgram.ID, "outlining"), 0.06f);
+	grassProgram.Activate();
+	glUniform4f(glGetUniformLocation(grassProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+	glUniform3f(glGetUniformLocation(grassProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
 	// Stops behind layers from displaying during animation (Tests for depth continiously)
 	glEnable(GL_DEPTH_TEST);
-  glEnable(GL_STENCIL_TEST);
-  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+  // Configure face culling
+  // Without face culling all faces are drawn in order of the depth, significantly wasting drawing time and fragshader compute time.
+  glEnable(GL_CULL_FACE);
+  // Faces are identified as front or back via their clockwise or counter-clockwise indicy rotation.
+  // Most games use a counter-clockwise standard for Front Faces, hence glFrontFace(GL_CCW): CCW=CounterClockWise
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
+
+  // Set blending function.
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Initialises Camera Object with resolution and position 
 	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
 
 	std::string modelPath = "resources/models/";
 
-	glm::quat shipRot = glm::angleAxis(-1.5708f, glm::vec3(1.0, 0.0, 0.0));
-	Model spaceship((modelPath + "spaceship/scene.gltf").c_str(), glm::vec3(0.5, 0.5, 0.5), glm::vec3(0.0, 0.0, -5.0), shipRot);
-	/*Model bunny((modelPath + "bunny/scene.gltf").c_str(), glm::vec3(15.0, 15.0, 15.0), glm::vec3(0.8, 0.0, -0.5));*/
-	/*glm::quat swordRot = glm::angleAxis(0.785398f, glm::vec3(0.0, 0.0, 1.0));*/
-	/*Model sword((modelPath + "sword/scene.gltf").c_str(), glm::vec3(0.05, 0.05, 0.05), glm::vec3(0.0, 0.0, -12.0), swordRot);*/
-  /*Model ground((modelPath + "ground/scene.gltf").c_str(), glm::vec3(1.0, 1.0, 1.0), glm::vec3(0.0, -5.0, 0.0));*/
-  /*Model trees((modelPath + "trees/scene.gltf").c_str(), glm::vec3(1.0, 1.0, 1.0), glm::vec3(0.0, -5.0, 0.0));*/
-  Model bigsword((modelPath + "stylized_big_sword/scene.gltf").c_str());
+  Model ground((modelPath + "grassground/scene.gltf").c_str());
+  Model grass((modelPath + "grass/scene.gltf").c_str());
+  Model windows((modelPath + "windows/scene.gltf").c_str(), glm::vec3(2.0, 2.0, 2.0), glm::vec3(0.0, -2.0, 0.0));
+
+  for (unsigned int i = 0; i < numWindows; i++)
+  {
+    positionsWin[i] = glm::vec3
+      (
+       // Min -10.0f, Max 10.0f
+       -10.0f +  (10.0f - (-10.0f)) * randomFloat(), 
+       // Min 1.0f, Max 4.0f
+       1.0f +  (4.0f - (1.0f)) * randomFloat(),
+       -10.0f +  (10.0f - (-10.0f)) * randomFloat() 
+      );
+    rotationsWin[i] = randomFloat();
+    drawOrder[i] = i;
+  }
+
+  // FPS counter
+  double prevTime = 0.0;
+  unsigned int framesPassed = 0;
 
 	// Main while loop 
 	while(!glfwWindowShouldClose(window))
   {
+    // FPS counter loop
+    double currentTime = glfwGetTime();
+    double timeDiff = currentTime - prevTime;
+    framesPassed++;
+    if (timeDiff >= 1.0 / 30.0)
+    {
+      std::string FPS = std::to_string(framesPassed / timeDiff);
+      // Multiply by 1000 to transform to Miliseconds
+      std::string ms = std::to_string(timeDiff / framesPassed * 1000);
+      std::string newTitle = "CORE3D - " + FPS + "FPS / " + ms + "ms";
+      glfwSetWindowTitle(window, newTitle.c_str());
+      prevTime = currentTime;
+      framesPassed = 0;
+      // You could put Input functions in here, as otherwise game time is linked to FPS, however, this causes tearing as slower
+      // update than FPS update.
+      // Delta time should be used for accurate results.
+    }
 		// Specify the colour of the background
-		glClearColor(0.45f, 0.45f, 0.50f, 1.0f);
+		glClearColor(0.089f, 0.158f, 0.209f, 1.0f);
 		// Clean the back buffer and assign the new colour to it
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// Gets Input to move the camera
 		camera.Inputs(window);
 		// Calls Matrix function of Camera object to set the Camera view in the shaderProgram
 	  camera.updateMatrix(45.0f, 0.1f, 100.0f);
+  
+    glEnable(GL_CULL_FACE);
+    ground.Draw(shaderProgram, camera);
+    glDisable(GL_CULL_FACE);
+    grass.Draw(grassProgram, camera);
 
-    // Draw Everything
-    glStencilFunc(GL_ALWAYS, 1, 0xFF);
-    spaceship.Draw(shaderProgram, camera);
-    bigsword.Draw(shaderProgram, camera);
+    glEnable(GL_BLEND);
+    
+    for (unsigned int i = 0; i < numWindows; i++)
+    {
+      distanceCamera[i] =  glm::length(positionsWin[i] - camera.Position);
+    }
+    qsort(drawOrder, numWindows, sizeof(unsigned int), compareDist);
 
-    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-    spaceship.Draw(outliningProgram, camera);
-    bigsword.Draw(outliningProgram, camera);
-
-    /*bigsword.Draw(shaderProgram, camera);*/
-    /*sword.Draw(shaderProgram, camera);*/
-    /*bunny.Draw(shaderProgram, camera);*/
-    /*trees.Draw(shaderProgram, camera);*/
-    /*ground.Draw(shaderProgram, camera);*/
+    for (unsigned int i = 0; i < numWindows; i++)
+    {
+      windows.Draw(windowProgram, camera, positionsWin[drawOrder[i]], glm::quat(1.0f, 0.0f, rotationsWin[drawOrder[i]], 0.0f));
+    }
+    glDisable(GL_BLEND);
 
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events

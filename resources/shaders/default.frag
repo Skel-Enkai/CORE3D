@@ -66,7 +66,7 @@ vec4 directLight()
 	
 	// diffuse lighting
 	vec3 normal = normalize(Normal);
-	vec3 lightDirection = normalize(vec3(0.0f, -1.0f, 0.0f));
+	vec3 lightDirection = normalize(vec3(-0.2f, -0.4f, 0.2f));
 
 	// Uses dot product to calculate how close in angle the two vectors are
 	float diffuse = max(dot(normal, -lightDirection), 0.0f);
@@ -86,7 +86,7 @@ vec4 directLight()
 //    return vec4(0.0, 0.0, 1.0, 1.0);
 
 	// Outputs the final calcualted color
-   return texture(diffuse0, texCoord) * lightColor * (diffuse + ambient) + texture(specular0, texCoord).r * specular;
+   return (texture(diffuse0, texCoord) * (diffuse + ambient) + texture(specular0, texCoord).r * specular) * lightColor;
 	
 }
 
@@ -117,7 +117,7 @@ vec4 spotLight()
 	float intensity = clamp((outerCone - angle) / (outerCone - innerCone), 0.0f, 1.0f);
 
 	// Outputs the final calcualted color
-	return texture(diffuse0, texCoord) * lightColor * (diffuse * intensity + ambient) + texture(specular0, texCoord).r * specular * intensity;
+	return (texture(diffuse0, texCoord) * (diffuse * intensity + ambient) + texture(specular0, texCoord).r * specular * intensity) * lightColor;
 }
 
 float near = 0.1f;

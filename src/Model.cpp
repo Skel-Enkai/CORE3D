@@ -21,10 +21,10 @@ Model::Model(const char* file, glm::vec3 scale, glm::vec3 translation, glm::quat
 	traverseNode(0, initM);
 }
 
-void Model::Draw(Shader& shader, Camera& camera)
+void Model::Draw(Shader& shader, Camera& camera, glm::vec3 position, glm::quat rotation)
 {
 	for (unsigned int i = 0; i < meshes.size(); i++)
-		 meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], translationsMeshes[i], rotationsMeshes[i], scalesMeshes[i]);
+		 meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] + rotation, scalesMeshes[i]);
 }
 
 void Model::loadMesh(unsigned int indMesh)

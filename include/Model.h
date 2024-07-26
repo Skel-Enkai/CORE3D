@@ -18,7 +18,7 @@ public:
     glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0)
   );
 
-	void Draw(Shader& shader, Camera& camera);
+	void Draw(Shader& shader, Camera& camera, glm::vec3 position = glm::vec3(1.0, 1.0, 1.0), glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0));
 
 private:
 	const char* file;
