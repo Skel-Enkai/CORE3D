@@ -14,10 +14,9 @@
 /*#include "glm/ext/quaternion_trigonometric.hpp"*/
 
 #include"Model.h"
-#include "glm/geometric.hpp"
 
-const unsigned int width = 4000;
-const unsigned int height = 2000;
+const unsigned int width = 2000;
+const unsigned int height = 1400;
 int mac_width, mac_height;
 
 const unsigned int numWindows = 10;
@@ -115,7 +114,7 @@ int main()
 
   Model ground((modelPath + "grassground/scene.gltf").c_str());
   Model grass((modelPath + "grass/scene.gltf").c_str());
-  Model windows((modelPath + "windows/scene.gltf").c_str(), glm::vec3(2.0, 2.0, 2.0), glm::vec3(0.0, -2.0, 0.0));
+  Model windows((modelPath + "windows/scene.gltf").c_str(), glm::vec3(2.0, 3.0, 2.0), glm::vec3(0.0, -2.0, 0.0));
 
   for (unsigned int i = 0; i < numWindows; i++)
   {
@@ -135,7 +134,7 @@ int main()
   double prevTime = 0.0;
   unsigned int framesPassed = 0;
 
-	// Main while loop 
+  // Main while loop 
 	while(!glfwWindowShouldClose(window))
   {
     // FPS counter loop

@@ -36,7 +36,7 @@ Shader::Shader(const char* vertexFile, const char* fragmentFile)
 	glShaderSource(vertexShader, 1, &vertexSource, NULL);
 	// Compile the Vertex Shader into machine code
 	glCompileShader(vertexShader);
-	logErrors(vertexShader, "VERTEX");
+	logErrors(vertexShader, "VERTEX", vertexFile);
 
 	// Create Fragment Shader Object and get its reference 
 	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -44,7 +44,7 @@ Shader::Shader(const char* vertexFile, const char* fragmentFile)
 	glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
 	// Compile the Fragment Shader into machine code
 	glCompileShader(fragmentShader);
-	logErrors(fragmentShader, "FRAGMENT");
+	logErrors(fragmentShader, "FRAGMENT", fragmentFile);
 
 	// Create Shader Program Object and get its reference 
 	ID = glCreateProgram();
@@ -70,7 +70,7 @@ void Shader::Delete()
 	glDeleteShader(ID);
 }
 
-void Shader::logErrors(unsigned int object, const char* type)
+void Shader::logErrors(unsigned int object, const char* type, const char* fileName)
 {
 	GLint hasSucceeded;
 	char infoLog[1024];
@@ -80,7 +80,7 @@ void Shader::logErrors(unsigned int object, const char* type)
 		if (hasSucceeded == GL_FALSE)
 		{
 			glGetShaderInfoLog(object, 1024, NULL, infoLog);
-			std::cout << "SHADER_COMPILATION_ERROR for: " << type << "\n" << infoLog << std::endl;
+			std::cout << "SHADER_COMPILATION_ERROR for: " << type << "\n" << "in file: " << fileName << "\n" << infoLog << std::endl;
 		}	
 	}
 	else 

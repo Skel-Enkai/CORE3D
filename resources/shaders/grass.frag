@@ -63,8 +63,10 @@ float linearizeDepth(float depth)
 
 // steepness: controls how quickly the depth value varies
 // offset: controls which set value of distance depth is halfway done, (which distance represents the depth value 0.5f)
-float logisticDepth(float depth, float steepness = 0.5f, float offset = 5.0f)
+float logisticDepth(float depth)
 {
+  float steepness = 0.5f;
+  float offset = 0.5f;
   float zVal = linearizeDepth(depth);
   return (1 / (1 + exp(-steepness * (zVal - offset))));
 }

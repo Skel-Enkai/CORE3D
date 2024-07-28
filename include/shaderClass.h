@@ -17,7 +17,7 @@ class Shader
 		void Activate();
 		void Delete();
 	private:
-		void logErrors(unsigned int shader, const char* type);
+		void logErrors(unsigned int shader, const char* type, const char* fileName = "");
 };
 
 #endif 
