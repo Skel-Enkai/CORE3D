@@ -21,7 +21,7 @@ vec4 pointLight()
 {
 	vec3 lightVec = currentPos - lightPos;
 	float dist = length(lightVec);
-	float scale = 1.5;
+	float scale = 0.1;
 	float a = 0.5;
 	float b = 0.2;
 
@@ -29,7 +29,7 @@ vec4 pointLight()
 	float intensity = 1.0f / (pow(scale * a * dist, 2) + scale * b * dist + 1.0f);
 
 	// ambient lighting
-	float ambient = 0.20f;
+	float ambient = 0.35f;
 	
 	// diffuse lighting
 	vec3 normal = normalize(Normal);
@@ -62,11 +62,11 @@ vec4 pointLight()
 vec4 directLight()
 {
 	// ambient lighting
-	float ambient = 0.10f;
+	float ambient = 0.20f;
 	
 	// diffuse lighting
 	vec3 normal = normalize(Normal);
-	vec3 lightDirection = normalize(vec3(-0.2f, -0.4f, 0.2f));
+	vec3 lightDirection = normalize(vec3(0.0f, -1.0f, 0.0f));
 
 	// Uses dot product to calculate how close in angle the two vectors are
 	float diffuse = max(dot(normal, -lightDirection), 0.0f);
@@ -141,7 +141,7 @@ float logisticDepth(float depth)
 
 void main()
 {
-	FragColor = directLight();
+	FragColor = pointLight();
 
   // Basic Fog Lighting
   //float depth = logisticDepth(gl_FragCoord.z);
