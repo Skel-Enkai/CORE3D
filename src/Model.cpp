@@ -6,7 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 
-Model::Model(const char* file, glm::vec3 scale, glm::vec3 translation, glm::quat rotation)
+Model::Model(const char* file, glm::vec3 scale, glm::vec3 trans, glm::quat rot)
 {
 	std::string text = get_file_contents(file);
 	JSON = json::parse(text);
@@ -14,20 +14,39 @@ Model::Model(const char* file, glm::vec3 scale, glm::vec3 translation, glm::quat
 	Model::file = file;
 	data = getData();
 
-  modelRotation = rotation;
+  rotation = rot;
+  position = trans;
 	// 0 is the index of the base node of the json tree
 	glm::mat4 initM = glm::scale(glm::mat4(1.0f), scale);
-  initM = glm::translate(initM, translation);
-	traverseNode(0, initM);
+  /*initM = glm::translate(initM, trans);*/
+
+  unsigned int initIndex = 0;
+  json nodes = JSON["nodes"];
+  for (unsigned int i = 0; i < nodes.size(); i++)
+  {
+    // I don't fully understand Itertors yet, this might be a bit hacky!
+    if (*nodes[i].find("name") == "root")
+    {
+      initIndex = i;
+    }
+  }
+	traverseNode(initIndex, initM);
 }
 
-void Model::Draw(Shader& shader, Camera& camera, glm::vec3 position, glm::quat rotation)
+void Model::Draw(Shader& shader, Camera& camera) 
 {
 	for (unsigned int i = 0; i < meshes.size(); i++)
 		 meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] + rotation, scalesMeshes[i]);
 }
 
-void Model::loadMesh(unsigned int indMesh)
+void Model::Draw(Shader& shader, Shader& secondaryShader, unsigned int mirrorTexture, Camera& camera)
+{
+	for (unsigned int i = 0; i < meshes.size(); i++)
+		 meshes[i].Mesh::Draw(shader, secondaryShader, mirrorTexture, camera,
+                          matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] + rotation, scalesMeshes[i]);
+}
+
+void Model::loadMesh(unsigned int indMesh, std::string name)
 {
 	unsigned int posAccInd = JSON["meshes"][indMesh]["primitives"][0]["attributes"]["POSITION"];
 	unsigned int normalAccInd = JSON["meshes"][indMesh]["primitives"][0]["attributes"]["NORMAL"];
@@ -45,7 +64,7 @@ void Model::loadMesh(unsigned int indMesh)
 	std::vector<GLuint> indices = getIndices(JSON["accessors"][indAccInd]);
 	std::vector<Texture> textures = getTextures();
 
-	meshes.push_back(Mesh(vertices, indices, textures));
+	meshes.push_back(Mesh(vertices, indices, textures, name));
 }
 
 void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
@@ -62,14 +81,14 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 		translation = glm::make_vec3(transValues);
 	}
 	// find rotation
-	glm::quat rotation = modelRotation;
+	glm::quat rot = rotation;
 	if (node.find("rotation") != node.end())
 	{
 		float rotValues[4];
 		for (unsigned int i = 0; i < node["rotation"].size(); i++)
 			rotValues[i] = (node["rotation"][i]);
     glm::quat temp  = glm::make_quat(rotValues);
-    rotation = rotation * temp;
+    rot = rot * temp;
 	}
 	// find scale
 	glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -95,10 +114,6 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 		matNode = glm::make_mat4(matValues);
 	}
 
-	glm::mat4 trans = glm::translate(glm::mat4(1.0f), translation);
-	glm::mat4 rot = glm::mat4_cast(rotation);
-	glm::mat4 sca = glm::scale(glm::mat4(1.0f), scale);
-  
   // If using normal maps insert general matrix transformation here ->
   // glm::mat4 matNextNode = matNode * matrix;
 	glm::mat4 matNextNode = matrix;
@@ -106,11 +121,12 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 	if (node.find("mesh") != node.end())
 	{
 		translationsMeshes.push_back(translation);
-		rotationsMeshes.push_back(rotation);
+		rotationsMeshes.push_back(rot);
 		scalesMeshes.push_back(scale);
 		matricesMeshes.push_back(matNextNode);
 
-		loadMesh(node["mesh"]);
+    std::string name = *node.find("name"); 
+		loadMesh(node["mesh"], name);
 	}
 	
 	// recursively calls this traversal function on all the nodes children

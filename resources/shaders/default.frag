@@ -141,7 +141,7 @@ float logisticDepth(float depth)
 
 void main()
 {
-	FragColor = pointLight();
+	FragColor = directLight();
 
   // Basic Fog Lighting
   //float depth = logisticDepth(gl_FragCoord.z);

@@ -3,10 +3,10 @@
 #include <glm/ext/quaternion_geometric.hpp>
 
 
-Camera::Camera(int width, int height, glm::vec3 position)
+Camera::Camera(unsigned short Width, unsigned short Height, glm::vec3 position)
 {
-	Camera::width = width;
-	Camera::height = height;
+	width = Width;
+	height = Height;
 	Position = position;
 }
 

@@ -14,20 +14,11 @@
 
 #include"Model.h"
 
-const unsigned int width = 2000;
-const unsigned int height = 1200;
+const unsigned short width = 2000;
+const unsigned short height = 1200;
 
-float rectangleVertices[] = 
-{
-  //  Coords    //  TexCoords
-   1.0f, -1.0f,    1.0f, 0.0f,
-  -1.0f,  1.0f,    0.0f, 1.0f, 
-  -1.0f, -1.0f,    0.0f, 0.0f,
-
-   1.0f,  1.0f,    1.0f, 1.0f, 
-  -1.0f,  1.0f,    0.0f, 1.0f,
-   1.0f, -1.0f,    1.0f, 0.0f 
-};
+const unsigned short cameraWidth = 1200;
+const unsigned short cameraHeight = 1200;
 
 int main() 
 {	
@@ -65,8 +56,8 @@ int main()
 
 	std::string shaderPath = "resources/shaders/";
   Shader shaderProgram((shaderPath + "default.vert").c_str(), (shaderPath + "default.frag").c_str());
-  Shader frameBufferProgram((shaderPath + "framebuffer.vert").c_str(), (shaderPath + "framebuffer.frag").c_str());
-  Shader frameProgram((shaderPath + "framebuffer.vert").c_str(), (shaderPath + "texture.frag").c_str());
+  Shader mirrorProgram((shaderPath + "default.vert").c_str(), (shaderPath + "texture.frag").c_str());
+  Shader grassProgram((shaderPath + "default.vert").c_str(), (shaderPath + "grass.frag").c_str());
 
 	// Generate light colour and position
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -77,40 +68,35 @@ int main()
 	shaderProgram.Activate();
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-  frameBufferProgram.Activate();
-  glUniform1i(glGetUniformLocation(frameBufferProgram.ID, "screenTexture"), GL_TEXTURE0);
-  glUniform1f(glGetUniformLocation(frameBufferProgram.ID, "width"), width);
-  glUniform1f(glGetUniformLocation(frameBufferProgram.ID, "height"), height);
-  frameProgram.Activate();
-  glUniform1i(glGetUniformLocation(frameProgram.ID, "screenTexture"), GL_TEXTURE0);
+  mirrorProgram.Activate();
+  glUniform1i(glGetUniformLocation(mirrorProgram.ID, "screenTexture"), GL_TEXTURE0);
+	glUniform4f(glGetUniformLocation(mirrorProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+	glUniform3f(glGetUniformLocation(mirrorProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+  grassProgram.Activate();
+	glUniform4f(glGetUniformLocation(grassProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+	glUniform3f(glGetUniformLocation(grassProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
   // Faces are identified as front or back via their clockwise or counter-clockwise indicy rotation.
   // Most games use a counter-clockwise standard for Front Faces, hence glFrontFace(GL_CCW): CCW=CounterClockWise
   /*glCullFace(GL_BACK);*/
   /*glFrontFace(GL_CCW);*/
 
-  // Set blending funciton.
-  glBlendEquation(GL_MAX);
-
 	// Initialises Camera Object with resolution and position 
-	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
+	Camera camera(width, height, glm::vec3(4.0f, 5.0f, 10.0f));
 
 	std::string modelPath = "resources/models/";
-  Model crow((modelPath + "crow/scene.gltf").c_str(), glm::vec3(1.0, 1.0, 1.0), glm::vec3(0.0, -3.0, -1.0));
+  Model mirror((modelPath + "mirror_blender/mirror.gltf").c_str(), glm::vec3(0.02, 0.02, 0.02), glm::vec3(0.0, 0.0, 0.0));
+  Model grassground((modelPath + "grassground/scene.gltf").c_str());
+  Model grass((modelPath + "grass/scene.gltf").c_str());
+  Model crow((modelPath + "crow/scene.gltf").c_str(), glm::vec3(0.4, 0.4, 0.4), glm::vec3(0.0, 0.0, 15.0));
 
-  // Create Rectangle for FrameBuffer to Draw to.
-  unsigned int rectVAO, rectVBO;
-  glGenVertexArrays(1, &rectVAO);
-  glGenBuffers(1, &rectVBO);
-  glBindVertexArray(rectVAO);
-  glBindBuffer(GL_ARRAY_BUFFER, rectVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(rectangleVertices), &rectangleVertices, GL_STATIC_DRAW);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+  // Set View from the Mirror
+  Camera mirrorView(cameraWidth, cameraHeight, glm::vec3(0, 5.0, -5.0));
+  mirrorView.Orientation = glm::normalize(glm::vec3(0.0, -0.05, 0.8));
+  mirrorView.updateMatrix(45.0f, 0.1f, 100.0f);
+  camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
-  // FPS counter
+   // FPS counter
   double prevTime = 0.0;
   unsigned int framesPassed = 0;
 
@@ -122,7 +108,7 @@ int main()
   unsigned int frameBufferTexture;
   glGenTextures(1, &frameBufferTexture);
   glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cameraWidth, cameraHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -132,7 +118,7 @@ int main()
   unsigned int RBO;
   glGenRenderbuffers(1, &RBO);
   glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, cameraWidth, cameraHeight);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
 
   auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -166,36 +152,35 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
     glEnable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
-		// Gets Input to move the camera
-		camera.Inputs(window);
-		// Calls Matrix function of Camera object to set the Camera view in the shaderProgram
-	  camera.updateMatrix(45.0f, 0.1f, 100.0f);
-    crow.Draw(shaderProgram, camera);
-    
-    // Unbind Frame buffer and Disable Depth Test
-    glDisable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+		/*mirrorView.Inputs(window);*/
+		/* mirrorView.updateMatrix(45.0f, 0.1f, 100.0f);*/
+
+    grassground.Draw(shaderProgram, mirrorView);
+    grass.Draw(grassProgram, mirrorView);
+    crow.Draw(shaderProgram, mirrorView);
+   
+    // Unbind the Framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
-    glBindVertexArray(rectVAO);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    frameProgram.Activate();
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    camera.Inputs(window);
+    camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
-    glEnable(GL_BLEND);
-    frameBufferProgram.Activate();
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    
+	  grassground.Draw(shaderProgram, camera);
+    grass.Draw(grassProgram, camera);
+    crow.Draw(shaderProgram, camera);
+    mirror.Draw(shaderProgram, mirrorProgram, frameBufferTexture, camera);
+   
     glfwSwapBuffers(window);
     // Take care of all GLFW events
     glfwPollEvents();
   }
   
   shaderProgram.Delete();
-  frameBufferProgram.Delete();
-  frameProgram.Delete();
+  mirrorProgram.Delete();
+  grassProgram.Delete();
   // Delete window before ending the program
   glfwDestroyWindow(window);
   // Terminate GLFW before ending the program

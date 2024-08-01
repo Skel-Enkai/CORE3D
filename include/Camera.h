@@ -21,15 +21,15 @@ class Camera
 
 		bool firstClick = true;
 
-		int width;
-		int height;
+		unsigned short width;
+		unsigned short height;
 
 		float speed;
     float slowspeed = 0.06f;
     float fastspeed = 0.25f;
 		float sensitivity = 20.0f;
 
-		Camera(int width, int heigh, glm::vec3 position);
+		Camera(unsigned short width, unsigned short heigh, glm::vec3 position);
 		
 		// Updates the camera matrix to the Vertex Shader
 		void updateMatrix(float FOVdeg, float nearPlane, float farPlane);

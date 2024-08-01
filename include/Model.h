@@ -4,6 +4,7 @@
 #include<json/json.h>
 #include"Mesh.h"
 #include "glm/fwd.hpp"
+#include "shaderClass.h"
 
 using json = nlohmann::json;
 
@@ -18,14 +19,24 @@ public:
     glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0)
   );
 
-	void Draw(Shader& shader, Camera& camera, glm::vec3 position = glm::vec3(1.0, 1.0, 1.0), glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0));
+	void Draw(Shader& shader, Camera& camera);
+	void Draw
+  (
+   Shader& shader, 
+   Shader& secondaryShader, 
+   unsigned int mirrorTexture, 
+   Camera& camera 
+  );
+
+  glm::vec3 position = glm::vec3(1.0, 1.0, 1.0);
+  glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0);
 
 private:
 	const char* file;
 	std::vector<unsigned char> data;
 	json JSON;
 
-  glm::quat modelRotation;
+  /*glm::quat modelRotation;*/
 
 	std::vector<Mesh> meshes;
 	std::vector<glm::vec3> translationsMeshes;
@@ -36,7 +47,7 @@ private:
 	std::vector<std::string> loadedTexName;
 	std::vector<Texture> loadedTex;
 	
-	void loadMesh(unsigned int indMesh);
+	void loadMesh(unsigned int indMesh, std::string name);
 	
 	void traverseNode(unsigned int nextNode, glm::mat4 matrix = glm::mat4(1.0f));
 
