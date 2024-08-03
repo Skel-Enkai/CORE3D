@@ -1,6 +1,4 @@
 #include "Model.h"
-#include "glm/ext/matrix_transform.hpp"
-#include "glm/gtc/quaternion.hpp"
 #include <glm/ext/vector_float4.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -14,11 +12,9 @@ Model::Model(const char* file, glm::vec3 scale, glm::vec3 trans, glm::quat rot)
 	Model::file = file;
 	data = getData();
 
-  rotation = rot;
-  position = trans;
-	// 0 is the index of the base node of the json tree
-	glm::mat4 initM = glm::scale(glm::mat4(1.0f), scale);
-  /*initM = glm::translate(initM, trans);*/
+  Model::rotation = rot;
+  Model::position = trans;
+  Model::scale = scale;
 
   unsigned int initIndex = 0;
   json nodes = JSON["nodes"];
@@ -30,20 +26,20 @@ Model::Model(const char* file, glm::vec3 scale, glm::vec3 trans, glm::quat rot)
       initIndex = i;
     }
   }
-	traverseNode(initIndex, initM);
+	traverseNode(initIndex);
 }
 
 void Model::Draw(Shader& shader, Camera& camera) 
 {
 	for (unsigned int i = 0; i < meshes.size(); i++)
-		 meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] + rotation, scalesMeshes[i]);
+		 meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] * rotation, scalesMeshes[i] * scale);
 }
 
 void Model::Draw(Shader& shader, Shader& secondaryShader, unsigned int mirrorTexture, Camera& camera)
 {
 	for (unsigned int i = 0; i < meshes.size(); i++)
 		 meshes[i].Mesh::Draw(shader, secondaryShader, mirrorTexture, camera,
-                          matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] + rotation, scalesMeshes[i]);
+                          matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] * rotation, scalesMeshes[i] * scale);
 }
 
 void Model::loadMesh(unsigned int indMesh, std::string name)

@@ -30,13 +30,12 @@ public:
 
   glm::vec3 position = glm::vec3(1.0, 1.0, 1.0);
   glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0);
-
+  glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
+ 
 private:
 	const char* file;
 	std::vector<unsigned char> data;
 	json JSON;
-
-  /*glm::quat modelRotation;*/
 
 	std::vector<Mesh> meshes;
 	std::vector<glm::vec3> translationsMeshes;
