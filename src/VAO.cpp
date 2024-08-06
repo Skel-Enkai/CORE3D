@@ -23,6 +23,7 @@ void VAO::Unbind()
 	glBindVertexArray(0);
 }
 
+// Maybe convert all these to actual destructors!
 void VAO::Delete()
 {
 	glDeleteVertexArrays(1, &ID);

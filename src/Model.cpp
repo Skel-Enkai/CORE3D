@@ -15,6 +15,7 @@ Model::Model(const char* file, glm::vec3 scale, glm::vec3 trans, glm::quat rot)
   Model::rotation = rot;
   Model::position = trans;
   Model::scale = scale;
+  Model::textures = getTextures();
 
   unsigned int initIndex = 0;
   json nodes = JSON["nodes"];
@@ -31,15 +32,41 @@ Model::Model(const char* file, glm::vec3 scale, glm::vec3 trans, glm::quat rot)
 
 void Model::Draw(Shader& shader, Camera& camera) 
 {
+  SetTextures(shader);
 	for (unsigned int i = 0; i < meshes.size(); i++)
 		 meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] * rotation, scalesMeshes[i] * scale);
 }
 
 void Model::Draw(Shader& shader, Shader& secondaryShader, unsigned int mirrorTexture, Camera& camera)
 {
+  SetTextures(shader);
 	for (unsigned int i = 0; i < meshes.size(); i++)
 		 meshes[i].Mesh::Draw(shader, secondaryShader, mirrorTexture, camera,
                           matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] * rotation, scalesMeshes[i] * scale);
+}
+
+void Model::SetTextures(Shader& shader)
+{
+    shader.Activate();
+
+    unsigned int numDiffuse = 0;
+	  unsigned int numSpecular = 0;
+
+	  for (unsigned int i = 0; i < textures.size(); i++)
+	  {
+		  std::string num;
+  		std::string type = textures[i].type;
+  		if (type == "diffuse") 
+  		{
+  			num = std::to_string(numDiffuse++);
+  		}
+  		else if (type == "specular")
+  		{
+  			num = std::to_string(numSpecular++);
+  		}
+  		textures[i].texUnit(shader, (type + num).c_str());
+  		textures[i].Bind();
+  	}
 }
 
 void Model::loadMesh(unsigned int indMesh, std::string name)
@@ -58,9 +85,8 @@ void Model::loadMesh(unsigned int indMesh, std::string name)
 
 	std::vector<Vertex> vertices = assembleVertices(positions, normals, texUVs);
 	std::vector<GLuint> indices = getIndices(JSON["accessors"][indAccInd]);
-	std::vector<Texture> textures = getTextures();
 
-	meshes.push_back(Mesh(vertices, indices, textures, name));
+	meshes.push_back(Mesh(vertices, indices, name));
 }
 
 void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
@@ -240,7 +266,7 @@ std::vector<GLuint> Model::getIndices(json accessor)
 
 std::vector<Texture> Model::getTextures()
 {
-	std::vector<Texture> textures;
+	std::vector<Texture> texes;
 
 	std::string fileStr = std::string(file);
 	std::string fileDirectory = fileStr.substr(0, fileStr.find_last_of('/') + 1);
@@ -248,37 +274,19 @@ std::vector<Texture> Model::getTextures()
 	for (unsigned int i = 0; i < JSON["images"].size(); i++)
 	{
 		std::string texPath = JSON["images"][i]["uri"];
-		
-		bool skip = false;
-		for (unsigned int j = 0; j < loadedTexName.size(); j++)
+
+		if ((texPath.find("baseColor") != std::string::npos) or (texPath.find("diffuse") != std::string::npos))
 		{
-			if (loadedTexName[j] == texPath)
-			{
-				textures.push_back(loadedTex[j]);
-				skip = true;
-				break;
-			}
+			Texture diffuse = Texture((fileDirectory + texPath).c_str(), "diffuse", texes.size());
+			texes.push_back(diffuse);
 		}
-		if (!skip)
+		else if (texPath.find("metallicRoughness") != std::string::npos or texPath.find("specular") != std::string::npos)
 		{
-			if ((texPath.find("baseColor") != std::string::npos) or (texPath.find("diffuse") != std::string::npos))
-			{
-				Texture diffuse = Texture((fileDirectory + texPath).c_str(), "diffuse", loadedTex.size());
-				textures.push_back(diffuse);
-				loadedTex.push_back(diffuse);
-				loadedTexName.push_back(texPath);
-			}
-			else if (texPath.find("metallicRoughness") != std::string::npos or texPath.find("specular") != std::string::npos)
-			{
-				Texture specular = Texture((fileDirectory + texPath).c_str(), "specular", loadedTex.size());
-				textures.push_back(specular);
-				loadedTex.push_back(specular);
-				loadedTexName.push_back(texPath);
-			}
+			Texture specular = Texture((fileDirectory + texPath).c_str(), "specular", texes.size());
+			texes.push_back(specular);
 		}
 	}
-
-	return textures;
+	return texes;
 }
 
 std::vector<Vertex> Model::assembleVertices

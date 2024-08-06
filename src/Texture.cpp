@@ -1,11 +1,11 @@
 #include"Texture.h"
 #include<iostream>
 
-Texture::Texture(const char* image, const char* texType, GLenum slot)
+Texture::Texture(const char* image, const char* texType, GLint slot)
 {
 	type = texType;
 	int widthImg, heightImg, numColCh;
-	stbi_set_flip_vertically_on_load(true);
+	/*stbi_set_flip_vertically_on_load(true);*/
 	unsigned char* bytes = stbi_load(image, &widthImg, &heightImg, &numColCh, 0);
 	if (bytes == NULL) {
 		std::cout << "Failed to find image." << std::endl;
@@ -47,12 +47,9 @@ Texture::Texture(const char* image, const char* texType, GLenum slot)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Texture::texUnit(Shader& shader, const char* uniform, GLuint unit)
+void Texture::texUnit(Shader& shader, const char* uniform)
 {
-	
-	GLuint texUni = glGetUniformLocation(shader.ID, uniform);
-  // Removing redundant call to Activate() as already activated in the Mesh class.
-	/*shader.Activate();*/
+	GLint texUni = glGetUniformLocation(shader.ID, uniform);
 	glUniform1i(texUni, unit);
 }
 

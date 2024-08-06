@@ -17,12 +17,18 @@ void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane)
   glm::mat4 projection = glm::perspective(glm::radians(FOVdeg), (static_cast<float>(Width) / static_cast<float>(Height)), nearPlane, farPlane);
 	// Sets new camera matrix
 	cameraMatrix = projection * view;
+  skyboxMatrix = projection * glm::mat4(glm::mat3(view));
 }
 
 void Camera::Matrix(Shader& shader, const char* uniform)
 {
 	// Sets uniform in the Vertex shader, so GPU has access to the final transformation of these two matrices 
 	glUniformMatrix4fv(glGetUniformLocation(shader.ID, uniform), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
+}
+
+void Camera::SkyboxMatrix(Shader& shader, const char* uniform)
+{
+	glUniformMatrix4fv(glGetUniformLocation(shader.ID, uniform), 1, GL_FALSE, glm::value_ptr(skyboxMatrix));
 }
 
 void Camera::Inputs(GLFWwindow* window)
