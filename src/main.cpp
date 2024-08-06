@@ -1,3 +1,4 @@
+#include <array>
 #include <cstdlib>
 #include <iostream>
 #include <glad/glad.h>
@@ -14,25 +15,15 @@
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "Camera.h"
 #include "Character.h"
+#include "Skybox.h"
 
 const unsigned short width = 2000;
 const unsigned short height = 1200;
 
 const unsigned short cameraWidth = 1200;
 const unsigned short cameraHeight = 1200;
-
-float rectangleVertices[] = 
-{
-  //  Coords    //  TexCoords
-   1.0f, -1.0f,    1.0f, 0.0f,
-  -1.0f,  1.0f,    0.0f, 1.0f, 
-  -1.0f, -1.0f,    0.0f, 0.0f,
-
-   1.0f,  1.0f,    1.0f, 1.0f, 
-  -1.0f,  1.0f,    0.0f, 1.0f,
-   1.0f, -1.0f,    1.0f, 0.0f 
-};
 
 int main() 
 {	
@@ -69,9 +60,10 @@ int main()
 
 	std::string shaderPath = "resources/shaders/";
   Shader shaderProgram((shaderPath + "default.vert").c_str(), (shaderPath + "default.frag").c_str());
-  Shader mirrorProgram((shaderPath + "default.vert").c_str(), (shaderPath + "texture.frag").c_str());
+  Shader playerProgram((shaderPath + "default.vert").c_str(), (shaderPath + "player.frag").c_str());
+  Shader mirrorProgram((shaderPath + "mirror.vert").c_str(), (shaderPath + "texture.frag").c_str());
   Shader grassProgram((shaderPath + "default.vert").c_str(), (shaderPath + "grass.frag").c_str());
-  Shader frameProgram((shaderPath + "framebuffer.vert").c_str(), (shaderPath + "texture.frag").c_str());
+  Shader skyboxProgram((shaderPath + "skybox.vert").c_str(), (shaderPath + "skybox.frag").c_str());
 
 	// Generate light colour and position
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -82,15 +74,18 @@ int main()
 	shaderProgram.Activate();
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+	playerProgram.Activate();
+	glUniform4f(glGetUniformLocation(playerProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+	glUniform3f(glGetUniformLocation(playerProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
   mirrorProgram.Activate();
-  glUniform1i(glGetUniformLocation(mirrorProgram.ID, "screenTexture"), GL_TEXTURE0);
+  glUniform1i(glGetUniformLocation(mirrorProgram.ID, "texture0"), 99);
 	glUniform4f(glGetUniformLocation(mirrorProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(mirrorProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
   grassProgram.Activate();
 	glUniform4f(glGetUniformLocation(grassProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(grassProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-  frameProgram.Activate();
-  glUniform1i(glGetUniformLocation(frameProgram.ID, "screenTexture"), GL_TEXTURE0);
+  skyboxProgram.Activate();
+  glUniform1i(glGetUniformLocation(skyboxProgram.ID, "cube"), 100);
 
   // Faces are identified as front or back via their clockwise or counter-clockwise indicy rotation.
   // Most games use a counter-clockwise standard for Front Faces, hence glFrontFace(GL_CCW): CCW=CounterClockWise
@@ -103,9 +98,9 @@ int main()
   Model grass((modelPath + "grass/scene.gltf").c_str());
 
   // Set View from the Mirror
-  Camera mirrorView(window, glm::vec3(0.566034, 4.024786, -7.489196));
-  mirrorView.Orientation = glm::normalize(glm::vec3(-0.193900, 0.180638, 0.964242));
-  mirrorView.updateMatrix(45.0f, 0.1f, 100.0f);
+  Camera mirrorView(window, glm::vec3(2.102342, 4.342332, -6.394495));
+  mirrorView.Orientation = glm::normalize(glm::vec3(-0.312417, 0.201481, 0.928328));
+  mirrorView.updateMatrix(40.0f, 0.1f, 100.0f);
 
   Character player(window, (modelPath + "crow/scene.gltf").c_str());
   player.CharacterModel.scale = glm::vec3(0.4, 0.4, 0.4);
@@ -142,20 +137,30 @@ int main()
   if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
     std::cout << "Framebuffer error: " << fboStatus << std::endl;
 
-  // Create Rectangle for FrameBuffer to Draw to.
-  unsigned int rectVAO, rectVBO;
-  glGenVertexArrays(1, &rectVAO);
-  glGenBuffers(1, &rectVBO);
-  glBindVertexArray(rectVAO);
-  glBindBuffer(GL_ARRAY_BUFFER, rectVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(rectangleVertices), &rectangleVertices, GL_STATIC_DRAW);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+  std::string cubemapsPath = "resources/cubemaps/";
+  std::array<std::string, 6> skyboxPaths =
+  {
+    cubemapsPath + "sky/right.jpg",
+    cubemapsPath + "sky/left.jpg",
+    cubemapsPath + "sky/top.jpg",
+    cubemapsPath + "sky/bottom.jpg",
+    cubemapsPath + "sky/front.jpg",
+    cubemapsPath + "sky/back.jpg"
+  };
+  std::array<std::string, 6> mountainPaths = 
+  {
+    cubemapsPath + "seamountains/right.jpg",
+    cubemapsPath + "seamountains/left.jpg",
+    cubemapsPath + "seamountains/top.jpg",
+    cubemapsPath + "seamountains/bottom.jpg",
+    cubemapsPath + "seamountains/front.jpg",
+    cubemapsPath + "seamountains/back.jpg"
+  };
+  
+  SkyBox scenebox(skyboxPaths);
 
   bool inputMirror = false;
-
+  
   // Main while loop 
 	while(!glfwWindowShouldClose(window))
   {
@@ -172,7 +177,7 @@ int main()
       glfwSetWindowTitle(window, newTitle.c_str());
       prevTime = currentTime;
       framesPassed = 0;
-
+      /*std::cout << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;*/
       /*std::cout << glm::to_string(mirrorView.Position) << glm::to_string(mirrorView.Orientation) << std::endl;*/
 
       // You could put Input functions in here, as otherwise game time is linked to FPS, however, this causes tearing as slower
@@ -195,7 +200,7 @@ int main()
     if (inputMirror)
     {
 		  mirrorView.Inputs(window);
-		  mirrorView.updateMatrix(45.0f, 0.1f, 100.0f);
+		  mirrorView.updateMatrix(40.0f, 0.1f, 100.0f);
     }
     else
     {
@@ -204,7 +209,8 @@ int main()
 
     grassground.Draw(shaderProgram, mirrorView);
     grass.Draw(grassProgram, mirrorView);
-    player.Draw(shaderProgram, mirrorView);
+    player.Draw(playerProgram, mirrorView);
+    scenebox.Draw(skyboxProgram, mirrorView);
    
     // Unbind the Framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -212,17 +218,8 @@ int main()
 
 	  grassground.Draw(shaderProgram, player.CharacterCamera);
 	  grass.Draw(grassProgram, player.CharacterCamera);
-    /*player.Draw(shaderProgram);*/
     mirror.Draw(shaderProgram, mirrorProgram, frameBufferTexture, player.CharacterCamera);
-
-    /*glDisable(GL_DEPTH_TEST);*/
-    /**/
-    /*glActiveTexture(GL_TEXTURE0);*/
-    /*glBindTexture(GL_TEXTURE_2D, frameBufferTexture);*/
-    /*glBindVertexArray(rectVAO);*/
-    /**/
-    /*frameProgram.Activate();*/
-    /*glDrawArrays(GL_TRIANGLES, 0, 6);*/
+    scenebox.Draw(skyboxProgram, player.CharacterCamera);
 
     glfwSwapBuffers(window);
     // Take care of all GLFW events
@@ -232,7 +229,8 @@ int main()
   shaderProgram.Delete();
   mirrorProgram.Delete();
   grassProgram.Delete();
-  frameProgram.Delete();
+  skyboxProgram.Delete();
+  playerProgram.Delete();
   // Delete window before ending the program
   glfwDestroyWindow(window);
   // Terminate GLFW before ending the program

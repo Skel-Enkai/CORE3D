@@ -3,15 +3,14 @@
 #include <string>
 #include"EBO.h"
 
-Mesh::Mesh(std::vector <Vertex>& vertices, std::vector <GLuint>& indices, std::vector <Texture>& textures, std::string name)
+Mesh::Mesh(std::vector <Vertex>& vertices, std::vector <GLuint>& indices, std::string name)
 {
 	Mesh::vertices = vertices;
 	Mesh::indices = indices;
-	Mesh::textures = textures;
   Mesh::name = name;
-	
+
 	mVAO.Bind();
-	
+
 	VBO mVBO(vertices);
 	EBO mEBO(indices);
 	// Links VBO attributes to the mVAO
@@ -35,27 +34,8 @@ void Mesh::Draw
 	glm::vec3 scale
 )
 {
-	shader.Activate();
 	mVAO.Bind();
-
-	unsigned int numDiffuse = 0;
-	unsigned int numSpecular = 0;
-
-	for (unsigned int i = 0; i < textures.size(); i++)
-	{
-		std::string num;
-		std::string type = textures[i].type;
-		if (type == "diffuse") 
-		{
-			num = std::to_string(numDiffuse++);
-		}
-		else if (type == "specular")
-		{
-			num = std::to_string(numSpecular++);
-		}
-		textures[i].texUnit(shader, (type + num).c_str(), i);
-		textures[i].Bind();
-	}
+  
 	// Take care of the Camera Matrix
 	glUniform3f(glGetUniformLocation(shader.ID, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 	camera.Matrix(shader, "camMatrix");
@@ -97,7 +77,7 @@ void Mesh::Draw
   {
     secondaryShader.Activate();
 
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0 + 99);
     glBindTexture(GL_TEXTURE_2D, mirrorTexture);	
   	// Take care of the Camera Matrix
   	glUniform3f(glGetUniformLocation(secondaryShader.ID, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
@@ -113,24 +93,6 @@ void Mesh::Draw
   {
 	  primaryShader.Activate();
 
-    unsigned int numDiffuse = 0;
-	  unsigned int numSpecular = 0;
-
-	  for (unsigned int i = 0; i < textures.size(); i++)
-	  {
-		  std::string num;
-  		std::string type = textures[i].type;
-  		if (type == "diffuse") 
-  		{
-  			num = std::to_string(numDiffuse++);
-  		}
-  		else if (type == "specular")
-  		{
-  			num = std::to_string(numSpecular++);
-  		}
-  		textures[i].texUnit(primaryShader, (type + num).c_str(), i);
-  		textures[i].Bind();
-  	}
     // Take care of the Camera Matrix
   	glUniform3f(glGetUniformLocation(primaryShader.ID, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
   	camera.Matrix(primaryShader, "camMatrix");

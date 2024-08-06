@@ -21,9 +21,9 @@ uniform mat4 scale;
 // then mirror on the x-axis
 // only works in specified range [0.0, 1.0]
 // I hand computed this and feel very proud :D
-const mat3 coordinateCorrectionMatrix = mat3(vec3(1.0, 0.0, 0.0),
-                                             vec3(0.0,-1.0, 0.0),
-                                             vec3(0.0, 1.0, 1.0));
+// const mat3 coordinateCorrectionMatrix = mat3(vec3(1.0, 0.0, 0.0),
+//                                              vec3(0.0,-1.0, 0.0),
+//                                              vec3(0.0, 1.0, 1.0));
 
 void main()
 {	
@@ -31,9 +31,8 @@ void main()
 
 	Normal = vec3(rotation * vec4(aNormal, 1.0));
 
-	// Solved tutorial issue, by translating the format from gltf standard to glm, by using the coordinatesTransformMatrix
-	texCoord = vec2(coordinateCorrectionMatrix * vec3(aTex, 1.0));
-	 
+	texCoord = aTex;
+
 	// Outputs the positions/coordinates of all vertices with respective to the camMatrix
 	gl_Position = camMatrix * vec4(currentPos, 1.0);
 }

@@ -27,6 +27,7 @@ public:
    unsigned int mirrorTexture, 
    Camera& camera 
   );
+  void SetTextures(Shader& shader);
 
   glm::vec3 position = glm::vec3(1.0, 1.0, 1.0);
   glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0);
@@ -43,9 +44,8 @@ private:
 	std::vector<glm::vec3> scalesMeshes;
 	std::vector<glm::mat4> matricesMeshes;
 
-	std::vector<std::string> loadedTexName;
-	std::vector<Texture> loadedTex;
-	
+  std::vector<Texture> textures;
+
 	void loadMesh(unsigned int indMesh, std::string name);
 	
 	void traverseNode(unsigned int nextNode, glm::mat4 matrix = glm::mat4(1.0f));
