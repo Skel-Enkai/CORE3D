@@ -103,14 +103,13 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 		translation = glm::make_vec3(transValues);
 	}
 	// find rotation
-	glm::quat rot = rotation;
+  glm::quat rot = glm::quat(1.0, 0.0, 0.0, 0.0);
 	if (node.find("rotation") != node.end())
 	{
 		float rotValues[4];
 		for (unsigned int i = 0; i < node["rotation"].size(); i++)
 			rotValues[i] = (node["rotation"][i]);
-    glm::quat temp  = glm::make_quat(rotValues);
-    rot = rot * temp;
+    rot  = glm::make_quat(rotValues);
 	}
 	// find scale
 	glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);

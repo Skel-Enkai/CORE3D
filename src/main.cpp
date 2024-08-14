@@ -14,6 +14,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include "glm/trigonometric.hpp"
 
 #include "Camera.h"
 #include "Character.h"
@@ -63,7 +64,8 @@ int main()
   Shader playerProgram((shaderPath + "default.vert").c_str(), (shaderPath + "player.frag").c_str());
   Shader mirrorProgram((shaderPath + "mirror.vert").c_str(), (shaderPath + "texture.frag").c_str());
   Shader grassProgram((shaderPath + "default.vert").c_str(), (shaderPath + "grass.frag").c_str());
-  Shader skyboxProgram((shaderPath + "skybox.vert").c_str(), (shaderPath + "skybox.frag").c_str());
+  Shader skyboxProgram((shaderPath + "skybox/skybox.vert").c_str(), (shaderPath + "skybox/skybox.frag").c_str());
+  Shader reflectionProgram((shaderPath + "default.vert").c_str(), (shaderPath + "skybox/reflection.frag").c_str());
 
 	// Generate light colour and position
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -85,17 +87,21 @@ int main()
 	glUniform4f(glGetUniformLocation(grassProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(grassProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
   skyboxProgram.Activate();
-  glUniform1i(glGetUniformLocation(skyboxProgram.ID, "cube"), 100);
+  glUniform1i(glGetUniformLocation(skyboxProgram.ID, "skybox"), 100);
+  reflectionProgram.Activate();
+  glUniform1i(glGetUniformLocation(reflectionProgram.ID, "skybox"), 100);
 
   // Faces are identified as front or back via their clockwise or counter-clockwise indicy rotation.
   // Most games use a counter-clockwise standard for Front Faces, hence glFrontFace(GL_CCW): CCW=CounterClockWise
-  /*glCullFace(GL_BACK);*/
-  /*glFrontFace(GL_CCW);*/
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
 
 	std::string modelPath = "resources/models/";
   Model mirror((modelPath + "mirror_blender/mirror.gltf").c_str(), glm::vec3(0.02, 0.02, 0.02), glm::vec3(0.0, 0.0, 0.0));
   Model grassground((modelPath + "grassground/scene.gltf").c_str());
   Model grass((modelPath + "grass/scene.gltf").c_str());
+  Model ship((modelPath + "spaceship/scene.gltf").c_str(), glm::vec3(1, 1, 1), glm::vec3(8.0, 5, 10.0),
+      glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0)));
 
   // Set View from the Mirror
   Camera mirrorView(window, glm::vec3(2.102342, 4.342332, -6.394495));
@@ -210,8 +216,9 @@ int main()
     grassground.Draw(shaderProgram, mirrorView);
     grass.Draw(grassProgram, mirrorView);
     player.Draw(playerProgram, mirrorView);
+    ship.Draw(reflectionProgram, mirrorView);
     scenebox.Draw(skyboxProgram, mirrorView);
-   
+
     // Unbind the Framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -219,18 +226,21 @@ int main()
 	  grassground.Draw(shaderProgram, player.CharacterCamera);
 	  grass.Draw(grassProgram, player.CharacterCamera);
     mirror.Draw(shaderProgram, mirrorProgram, frameBufferTexture, player.CharacterCamera);
+    ship.Draw(reflectionProgram, player.CharacterCamera);
     scenebox.Draw(skyboxProgram, player.CharacterCamera);
 
     glfwSwapBuffers(window);
     // Take care of all GLFW events
     glfwPollEvents();
   }
-  
+ 
+  // probably don't need to delete all shaders as OpenGL will handle it.
   shaderProgram.Delete();
   mirrorProgram.Delete();
   grassProgram.Delete();
   skyboxProgram.Delete();
   playerProgram.Delete();
+  reflectionProgram.Delete();
   // Delete window before ending the program
   glfwDestroyWindow(window);
   // Terminate GLFW before ending the program
