@@ -3,9 +3,10 @@
 // Outputs the colors in RGBA
 out vec4 FragColor;
 
-in vec3 currentPos;
+in vec3 Position;
+in vec3 Colour;
 in vec3 Normal;
-in vec2 texCoord;
+in vec2 TexCoord;
 
 // The texture unit uniforms
 uniform sampler2D diffuse0;
@@ -31,13 +32,13 @@ vec4 directLight()
 
 	// Specular lighting
 	float specularLight = 0.2f;
-	vec3 viewDirection = normalize(camPos -currentPos);
+	vec3 viewDirection = normalize(camPos -Position);
 	vec3 reflectionDirection = reflect(lightDirection, normal);
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
 
   // If Alpha Value is very low, don't even bother drawing it!
-  if (texture(diffuse0, texCoord).a < 0.1)
+  if (texture(diffuse0, TexCoord).a < 0.1)
     discard;
 
   //if (normal.y > 0.5)
@@ -48,7 +49,7 @@ vec4 directLight()
   //  return vec4(0.0, 0.0, 1.0, 1.0);
 
 	// Outputs the final calcualted color
-  return (texture(diffuse0, texCoord) * (diffuse + ambient) + texture(specular0, texCoord).r * specular) * lightColor;
+  return (texture(diffuse0, TexCoord) * (diffuse + ambient) + texture(specular0, TexCoord).r * specular) * lightColor;
 	
 }
 

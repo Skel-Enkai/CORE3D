@@ -1,9 +1,11 @@
 #include "Model.h"
+#include "GLFW/glfw3.h"
 #include <glm/ext/vector_float4.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 
+#include <iostream>
 Model::Model(const char* file, glm::vec3 scale, glm::vec3 trans, glm::quat rot)
 {
 	std::string text = get_file_contents(file);
@@ -32,6 +34,8 @@ Model::Model(const char* file, glm::vec3 scale, glm::vec3 trans, glm::quat rot)
 
 void Model::Draw(Shader& shader, Camera& camera) 
 {
+  shader.Activate();
+  shader.setFloat("time", glfwGetTime());
   SetTextures(shader);
 	for (unsigned int i = 0; i < meshes.size(); i++)
 		 meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], translationsMeshes[i] + position, rotationsMeshes[i] * rotation, scalesMeshes[i] * scale);
@@ -39,6 +43,8 @@ void Model::Draw(Shader& shader, Camera& camera)
 
 void Model::Draw(Shader& shader, Shader& secondaryShader, unsigned int mirrorTexture, Camera& camera)
 {
+  shader.Activate();
+  shader.setFloat("time", glfwGetTime());
   SetTextures(shader);
 	for (unsigned int i = 0; i < meshes.size(); i++)
 		 meshes[i].Mesh::Draw(shader, secondaryShader, mirrorTexture, camera,
@@ -47,8 +53,6 @@ void Model::Draw(Shader& shader, Shader& secondaryShader, unsigned int mirrorTex
 
 void Model::SetTextures(Shader& shader)
 {
-    shader.Activate();
-
     unsigned int numDiffuse = 0;
 	  unsigned int numSpecular = 0;
 

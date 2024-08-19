@@ -66,7 +66,7 @@ void SkyBox::Draw(Shader& shader, Camera& camera)
   glDepthFunc(GL_LEQUAL);
   glDepthMask(GL_FALSE);
   shader.Activate();
-	camera.SkyboxMatrix(shader, "camMatrix");
+	camera.setSkyboxMatrix(shader, "camMatrix");
   
   glBindVertexArray(skyboxVAO.ID);
   glActiveTexture(GL_TEXTURE0 + 100);

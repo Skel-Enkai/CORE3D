@@ -1,11 +1,12 @@
 #version 330 core
 
 // Outputs the colors in RGBA
-out vec4 FragColor;
+out vec4 FragColour;
 
-in vec3 currentPos;
+in vec3 Position;
 in vec3 Normal;
-in vec2 texCoord;
+in vec3 Colour;
+in vec2 TexCoord;
 
 // The texture unit uniforms
 uniform sampler2D diffuse0;
@@ -19,7 +20,7 @@ uniform vec3 camPos;
 // Inverse Square Law (Point Light)
 vec4 pointLight() 
 {
-	vec3 lightVec = currentPos - lightPos;
+	vec3 lightVec = Position - lightPos;
 	float dist = length(lightVec);
 	float scale = 0.1;
 	float a = 0.5;
@@ -41,7 +42,7 @@ vec4 pointLight()
 
 	// Specular lighting
 	float specularLight = 0.25f;
-	vec3 viewDirection = normalize(camPos -currentPos);
+	vec3 viewDirection = normalize(camPos -Position);
 	vec3 reflectionDirection = reflect(lightDirection, normal);
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
@@ -55,7 +56,7 @@ vec4 pointLight()
 //	}
 
 	// Outputs the final calcualted color
-	return texture(diffuse0, texCoord) * lightColor * (diffuse * intensity + ambient) + texture(specular0, texCoord).r * specular * intensity;
+	return texture(diffuse0, TexCoord) * lightColor * (diffuse * intensity + ambient) + texture(specular0, TexCoord).r * specular * intensity;
 }
 
 
@@ -73,7 +74,7 @@ vec4 directLight()
 
 	// Specular lighting
 	float specularLight = 1.0f;
-	vec3 viewDirection = normalize(camPos -currentPos);
+	vec3 viewDirection = normalize(camPos -Position);
 	vec3 reflectionDirection = reflect(lightDirection, normal);
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
@@ -86,7 +87,7 @@ vec4 directLight()
 //    return vec4(0.0, 0.0, 1.0, 1.0);
 
 	// Outputs the final calcualted color
-   return (texture(diffuse0, texCoord) * (diffuse + ambient) + texture(specular0, texCoord).r * specular) * lightColor;
+   return (texture(diffuse0, TexCoord) * (diffuse + ambient) + texture(specular0, TexCoord).r * specular) * lightColor;
 	
 }
 
@@ -101,14 +102,14 @@ vec4 spotLight()
 	
 	// diffuse lighting
 	vec3 normal = normalize(Normal);
-	vec3 lightDirection = normalize(vec3(currentPos - lightPos));
+	vec3 lightDirection = normalize(vec3(Position - lightPos));
 
 	// Uses dot product to calculate how close in angle the two vectors are
 	float diffuse = max(dot(normal, -lightDirection), 0.0f);
 
 	// Specular lighting
 	float specularLight = 0.25f;
-	vec3 viewDirection = normalize(camPos -currentPos);
+	vec3 viewDirection = normalize(camPos -Position);
 	vec3 reflectionDirection = reflect(lightDirection, normal);
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
@@ -117,7 +118,7 @@ vec4 spotLight()
 	float intensity = clamp((outerCone - angle) / (outerCone - innerCone), 0.0f, 1.0f);
 
 	// Outputs the final calcualted color
-	return (texture(diffuse0, texCoord) * (diffuse * intensity + ambient) + texture(specular0, texCoord).r * specular * intensity) * lightColor;
+	return (texture(diffuse0, TexCoord) * (diffuse * intensity + ambient) + texture(specular0, TexCoord).r * specular * intensity) * lightColor;
 }
 
 float near = 0.1f;
@@ -141,7 +142,7 @@ float logisticDepth(float depth)
 
 void main()
 {
-	FragColor = directLight();
+	FragColour = directLight();
 
   // Basic Fog Lighting
   //float depth = logisticDepth(gl_FragCoord.z);

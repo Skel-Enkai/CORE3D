@@ -12,23 +12,27 @@ Camera::Camera(GLFWwindow* window, glm::vec3 position)
 void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane)
 {
 	// Forms a view matrix from a Position(Eye), a Direction(Center) and an Orientation(Which way is Up)
-  glm::mat4 view = glm::lookAt(Position, Position + Orientation, Up);
+  view = glm::lookAt(Position, Position + Orientation, Up);
 	// Forms the perspective matrix with a FOV, a canvas size, nearPlan and farPlane 
-  glm::mat4 projection = glm::perspective(glm::radians(FOVdeg), (static_cast<float>(Width) / static_cast<float>(Height)), nearPlane, farPlane);
+  projection = glm::perspective(glm::radians(FOVdeg), (static_cast<float>(Width) / static_cast<float>(Height)), nearPlane, farPlane);
 	// Sets new camera matrix
 	cameraMatrix = projection * view;
   skyboxMatrix = projection * glm::mat4(glm::mat3(view));
 }
 
-void Camera::Matrix(Shader& shader, const char* uniform)
+void Camera::setCamMatrix(Shader& shader, const char* uniform)
 {
-	// Sets uniform in the Vertex shader, so GPU has access to the final transformation of these two matrices 
-	glUniformMatrix4fv(glGetUniformLocation(shader.ID, uniform), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
+  shader.setMat4(uniform, cameraMatrix);
 }
 
-void Camera::SkyboxMatrix(Shader& shader, const char* uniform)
+void Camera::setViewMatrix(Shader& shader, const char* uniform)
 {
-	glUniformMatrix4fv(glGetUniformLocation(shader.ID, uniform), 1, GL_FALSE, glm::value_ptr(skyboxMatrix));
+  shader.setMat4(uniform, view);
+}
+
+void Camera::setSkyboxMatrix(Shader& shader, const char* uniform)
+{
+  shader.setMat4(uniform, skyboxMatrix);
 }
 
 void Camera::Inputs(GLFWwindow* window)
