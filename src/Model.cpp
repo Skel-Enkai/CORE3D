@@ -1,18 +1,32 @@
 #include "Model.h"
-#include "GLFW/glfw3.h"
+
+#include <GLFW/glfw3.h>
 #include <glm/ext/vector_float4.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
+#include <vector>
 
-#include <iostream>
-Model::Model(const char* file, glm::vec3 scale, glm::vec3 trans, glm::quat rot)
+Model::Model
+(
+  const char* file, 
+  unsigned int instanceNum,
+  std::vector <glm::mat4> instanceMatrices,
+  std::vector <glm::mat4> rotationMatrices,
+  glm::vec3 scale, 
+  glm::vec3 trans, 
+  glm::quat rot
+)
 {
 	std::string text = get_file_contents(file);
 	JSON = json::parse(text);
 
 	Model::file = file;
 	data = getData();
+
+  Model::instancing = instanceNum;
+  Model::instanceMatrices = instanceMatrices;
+  Model::rotationMatrices = rotationMatrices;
 
   Model::rotation = rot;
   Model::position = trans;
@@ -90,7 +104,7 @@ void Model::loadMesh(unsigned int indMesh, std::string name)
 	std::vector<Vertex> vertices = assembleVertices(positions, normals, texUVs);
 	std::vector<GLuint> indices = getIndices(JSON["accessors"][indAccInd]);
 
-	meshes.push_back(Mesh(vertices, indices, name));
+	meshes.push_back(Mesh(vertices, indices, name, instancing, instanceMatrices, rotationMatrices));
 }
 
 void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)

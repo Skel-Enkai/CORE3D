@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
+#include <math.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -18,6 +19,8 @@
 #include "Camera.h"
 #include "Character.h"
 #include "Skybox.h"
+#include "glm/gtc/quaternion.hpp"
+#include "glm/gtx/transform.hpp"
 
 const unsigned short width = 2000;
 const unsigned short height = 1200;
@@ -25,39 +28,19 @@ const unsigned short height = 1200;
 const unsigned short cameraWidth = 1200;
 const unsigned short cameraHeight = 1200;
 
-int main() 
-{	
-	// Initialise GLFW
-	glfwInit();
-	
-	// Tell GLFW what version of OpenGL were are running
-	// In this case we are using OpenGL 3.3
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+// returns float between -1.0f and 1.0f
+float randf()
+{
+	return -1.0f + (rand() / (RAND_MAX / 2.0f));
+}
 
-	// Tell GLFW we are using the CORE profile
-	// Core profile only contains modern functions
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	
-	GLFWwindow * window = glfwCreateWindow(width, height, "CORE3D", NULL, NULL);
-	
-	// Error check if the window fails to create
-	if (window == NULL)
-	{	// pipes error message to cout, and Terminates GLFW
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
-		return -1; 
-	}
-	// Introduce the window into the current context
-	glfwMakeContextCurrent(window);
+float randfPositive()
+{
+  return (static_cast<float>(rand()) /(static_cast<float>(RAND_MAX)));
+}
 
-	// Load GLAD so it configures OpenGL
-	gladLoadGL();
-	
-	// Specify the viewport of OpenGL in the Window 
-	// In this case the viewport goes from x = 0, y = 0, to x = 800, y = 800
-	glViewport(0, 0, width, height);
-
+void runSceneOne(GLFWwindow* window)
+{
 	std::string shaderPath = "resources/shaders/";
   Shader shaderProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "default.frag"));
   Shader playerProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "player.frag"));
@@ -74,8 +57,6 @@ int main()
 	// Generate light colour and position
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	glm::vec3 lightPos = glm::vec3(0.0f, 22.0f, 5.0f);
-	glm::mat4 lightModel = glm::mat4(1.0f);
-	lightModel = glm::translate(lightModel, lightPos);
 
   // Set Initial Shader Uniforms
 	shaderProgram.Activate();
@@ -108,19 +89,18 @@ int main()
   explosionProgram.setVec4("lightColor", lightColor);
   explosionProgram.setVec3("lightPos", lightPos);
 
-
   // Faces are identified as front or back via their clockwise or counter-clockwise indicy rotation.
   // Most games use a counter-clockwise standard for Front Faces, hence glFrontFace(GL_CCW): CCW=CounterClockWise
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
 
 	std::string modelPath = "resources/models/";
-  Model mirror((modelPath + "mirror_blender/mirror.gltf").c_str(), glm::vec3(0.02, 0.02, 0.02), glm::vec3(0.0, 0.0, 0.0));
+  Model mirror((modelPath + "mirror_blender/mirror.gltf").c_str(), 1, {}, {}, glm::vec3(0.02, 0.02, 0.02), glm::vec3(0.0, 0.0, 0.0));
   Model grassground((modelPath + "grassground/scene.gltf").c_str());
   Model grass((modelPath + "grass/scene.gltf").c_str());
-  Model ship((modelPath + "spaceship/scene.gltf").c_str(), glm::vec3(1, 1, 1), glm::vec3(8.0, 5, 10.0),
+  Model ship((modelPath + "spaceship/scene.gltf").c_str(), 1, {}, {}, glm::vec3(1, 1, 1), glm::vec3(8.0, 5, 10.0),
       glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0)));
-  Model statue((modelPath + "statue/scene.gltf").c_str(), glm::vec3(8, 8, 8), glm::vec3(-5, 10.0, 10.0));
+  Model statue((modelPath + "statue/scene.gltf").c_str(), 1, {}, {}, glm::vec3(8, 8, 8), glm::vec3(-5, 10.0, 10.0));
 
   // Set View from the Mirror
   Camera mirrorView(window, glm::vec3(2.102342, 4.342332, -6.394495));
@@ -133,7 +113,7 @@ int main()
   player.rotationOffset = glm::angleAxis(180.0f, glm::vec3(0.0, 1.0, 0.0));
   player.CharacterCamera.updateMatrix(45.0f, 0.1f, 100.0f);
 
-   // FPS counter
+  // FPS counter
   double prevTime = 0.0;
   unsigned int framesPassed = 0;
 
@@ -186,7 +166,7 @@ int main()
   SkyBox scenebox(skyboxPaths);
 
   bool inputMirror = false;
-  
+
   // Main while loop 
 	while(!glfwWindowShouldClose(window))
   {
@@ -210,6 +190,7 @@ int main()
       // update than FPS update.
       // Delta time should be used for accurate results.
     }
+
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		// Specify the colour of the background
 		glClearColor(0.12f, 0.10f, 0.21f, 1.0f);
@@ -257,9 +238,173 @@ int main()
     // Take care of all GLFW events
     glfwPollEvents();
   }
+}
+
+void runSceneTwo(GLFWwindow* window)
+{
+	std::string shaderPath = "resources/shaders/";
+  Shader asteroidProgram((shaderPath + "instancing/asteroid.vert"), (shaderPath + "default.geom"), (shaderPath + "default.frag"));
+  Shader shaderProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "default.frag"));
+  Shader skyboxProgram((shaderPath + "skybox/skybox.vert"), (shaderPath + "skybox/skybox.frag"));
+
+	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	glm::vec3 lightPos = glm::vec3(0.0f, 22.0f, 5.0f);
+
+  shaderProgram.Activate();
+  shaderProgram.setVec4("lightColor", lightColor);
+  shaderProgram.setVec3("lightPos", lightPos);
+
+  asteroidProgram.Activate();
+  asteroidProgram.setVec4("lightColor", lightColor);
+  asteroidProgram.setVec3("lightPos", lightPos);
+  
+  skyboxProgram.Activate();
+  skyboxProgram.setInt("skybox", 100);
+
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
+
+  Camera camera(window, glm::vec3(0.0f, 0.0f, 2.0f));
+
+	std::string modelPath = "resources/models/";
+  Model jupiter((modelPath + "jupiter/scene.gltf").c_str());
+
+  const unsigned int numAsteroids = 5000;
+  float radius = 100.0f;
+  float radiusDeviation = 25.0f;
+
+  std::vector <glm::mat4> instanceMatrix;
+  std::vector <glm::mat4> rotationMatrix;
+  
+  for (unsigned int i = 0; i < numAsteroids; i++)
+  {
+    float x = randf();
+    float finalRadius = radius + randf() * radiusDeviation;
+    float y = ((rand() % 2) * 2 - 1) * sqrt(1.0f - x * x);
+
+    glm::vec3 tempTranslation;
+    glm::quat tempRotation;
+    glm::vec3 tempScale;
+
+    if (randf() > 0.5f)
+    {
+      tempTranslation = glm::vec3(y * finalRadius, randf(), x * finalRadius);
+    }
+    else
+    {
+      tempTranslation = glm::vec3(x * finalRadius, randf(), y * finalRadius);
+    }
+    tempRotation = glm::quat(1.0f, randf(), randf(), randf());
+    tempScale = 0.05f * glm::vec3(0.1f + randfPositive(), 0.1f + randfPositive(), 0.1f + randfPositive());
+
+    glm::mat4 trans = glm::mat4(1.0f);
+    glm::mat4 sca = glm::mat4(1.0f);
+
+    trans = glm::translate(trans, tempTranslation);
+    glm::mat4 rot = glm::mat4_cast(tempRotation);
+    sca = glm::scale(sca, tempScale);
+
+    instanceMatrix.push_back(trans * sca);
+    rotationMatrix.push_back(rot);
+  }
+  Model asteriod((modelPath + "asteroid/scene.gltf").c_str(), numAsteroids, instanceMatrix, rotationMatrix);
+
+  std::string cubemapsPath = "resources/cubemaps/";
+  std::array<std::string, 6> spacePaths =
+  {
+    cubemapsPath + "space/right.png",
+    cubemapsPath + "space/left.png",
+    cubemapsPath + "space/top.png",
+    cubemapsPath + "space/bottom.png",
+    cubemapsPath + "space/front.png",
+    cubemapsPath + "space/back.png"
+  };
+  SkyBox space(spacePaths);
+
+  // FPS counter
+  double prevTime = 0.0;
+  unsigned int framesPassed = 0;
+
+  // Main while loop 
+	while(!glfwWindowShouldClose(window))
+  {
+    // FPS counter loop
+    double currentTime = glfwGetTime();
+    double timeDiff = currentTime - prevTime;
+    framesPassed++;
+    if (timeDiff >= 1.0 / 30.0)
+    {
+      std::string FPS = std::to_string(framesPassed / timeDiff);
+      // Multiply by 1000 to transform to Miliseconds
+      std::string ms = std::to_string(timeDiff / framesPassed * 1000);
+      std::string newTitle = "CORE3D - " + FPS + "FPS / " + ms + "ms";
+      glfwSetWindowTitle(window, newTitle.c_str());
+      prevTime = currentTime;
+      framesPassed = 0;
+      /*std::cout << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;*/
+      // You could put Input functions in here, as otherwise game time is linked to FPS, however, this causes tearing as slower
+      // update than FPS update.
+      // Delta time should be used for accurate results.
+    }
+
+		// Specify the colour of the background
+		glClearColor(0.12f, 0.10f, 0.21f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    camera.Inputs(window);
+    camera.updateMatrix(45.0f, 0.1f, 1000.0f);
+
+    jupiter.Draw(shaderProgram, camera);
+    asteriod.Draw(asteroidProgram, camera);
+
+    space.Draw(skyboxProgram, camera);
+
+    glfwSwapBuffers(window);
+    // Take care of all GLFW events
+    glfwPollEvents();
+  }
+}
+
+int main() 
+{	
+	// Initialise GLFW
+	glfwInit();
+	
+	// Tell GLFW what version of OpenGL were are running
+	// In this case we are using OpenGL 3.3
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
+	// Tell GLFW we are using the CORE profile
+	// Core profile only contains modern functions
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	
+	GLFWwindow * window = glfwCreateWindow(width, height, "CORE3D", NULL, NULL);
+	
+	// Error check if the window fails to create
+	if (window == NULL)
+	{	// pipes error message to cout, and Terminates GLFW
+		std::cout << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		return -1; 
+	}
+	// Introduce the window into the current context
+	glfwMakeContextCurrent(window);
+
+	// Load GLAD so it configures OpenGL
+	gladLoadGL();
+	
+	// Specify the viewport of OpenGL in the Window 
+	// In this case the viewport goes from x = 0, y = 0, to x = 800, y = 800
+	glViewport(0, 0, width, height);
+
+  runSceneTwo(window);
   // Delete window before ending the program
   glfwDestroyWindow(window);
   // Terminate GLFW before ending the program
   glfwTerminate();
   return 0;
 }
+

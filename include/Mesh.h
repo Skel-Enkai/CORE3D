@@ -3,8 +3,8 @@
 
 #include"VAO.h"
 #include"Camera.h"
-#include"Texture.h"
-#include "glm/fwd.hpp"
+#include<glm/fwd.hpp>
+#include <vector>
 
 class Mesh
 {
@@ -12,10 +12,19 @@ class Mesh
 		std::vector <Vertex> vertices;
 		std::vector <GLuint> indices;
     std::string name;
-		 
-		VAO mVAO; 
-		
-		Mesh(std::vector <Vertex>& vertices, std::vector <GLuint>& indices, std::string name);
+    unsigned int instancing;
+
+		VAO mVAO;
+
+		Mesh
+    (
+     std::vector <Vertex>& vertices, 
+     std::vector <GLuint>& indices, 
+     std::string name,
+     unsigned int instancing = 1, 
+     std::vector <glm::mat4> instanceMatrix = {},
+     std::vector <glm::mat4> rotationMatrix = {}
+    );
 
 		void Draw
 		(

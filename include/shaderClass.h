@@ -11,7 +11,7 @@ class Shader
 {
 	public:
     Shader(std::string vertexFile, std::string fragmentFile);
-		Shader(std::string  vertexFile, std::string geometryFile, std::string fragmentFile);
+    Shader(std::string  vertexFile, std::string geometryFile, std::string fragmentFile);
 
     void setFloat(const std::string &uniformName, const float floatToSet);
     void setInt(const std::string &uniformName, const int intToSet);
@@ -23,8 +23,8 @@ class Shader
 		void Delete();
 	private:
     // Reference ID of the Shader Program
-		GLuint ID;
-		void logErrors(unsigned int shader, const char* type, std::string fileName = "");
+    GLuint ID;
+    void logErrors(unsigned int shader, const char* type, std::string fileName = "");
 };
 
 #endif 

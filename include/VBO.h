@@ -19,6 +19,7 @@ class VBO
 		GLuint ID; 
 		VBO(std::vector <Vertex>& vertices);
     VBO(float* data, unsigned int size);
+    VBO(std::vector<glm::mat4>& mat4s);
 		
 		void Bind();
 		void Unbind();
