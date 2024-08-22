@@ -125,7 +125,7 @@ void Mesh::Draw
     secondaryShader.Activate();
 
     glActiveTexture(GL_TEXTURE0 + 99);
-    glBindTexture(GL_TEXTURE_2D, mirrorTexture);	
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mirrorTexture);	
   	// Take care of the Camera Matrix
     secondaryShader.setVec3("camPos", camera.Position);
   	camera.setCamMatrix(secondaryShader, "camMatrix");

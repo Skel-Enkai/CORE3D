@@ -15,12 +15,11 @@
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/trigonometric.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include "Camera.h"
 #include "Character.h"
 #include "Skybox.h"
-#include "glm/gtc/quaternion.hpp"
-#include "glm/gtx/transform.hpp"
 
 const unsigned short width = 2000;
 const unsigned short height = 1200;
@@ -28,12 +27,15 @@ const unsigned short height = 1200;
 const unsigned short cameraWidth = 1200;
 const unsigned short cameraHeight = 1200;
 
+const unsigned short antiAliasingSamples = 8;
+
 // returns float between -1.0f and 1.0f
 float randf()
 {
 	return -1.0f + (rand() / (RAND_MAX / 2.0f));
 }
 
+// returns float between 0.0f and 1.0f
 float randfPositive()
 {
   return (static_cast<float>(rand()) /(static_cast<float>(RAND_MAX)));
@@ -44,7 +46,7 @@ void runSceneOne(GLFWwindow* window)
 	std::string shaderPath = "resources/shaders/";
   Shader shaderProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "default.frag"));
   Shader playerProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "player.frag"));
-  Shader mirrorProgram((shaderPath + "mirror.vert"), (shaderPath + "texture.frag"));
+  Shader mirrorProgram((shaderPath + "mirror.vert"), (shaderPath + "post-processing/anti-aliasing.frag"));
   Shader grassProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "grass.frag"));
   Shader skyboxProgram((shaderPath + "skybox/skybox.vert"), (shaderPath + "skybox/skybox.frag"));
 
@@ -69,6 +71,7 @@ void runSceneOne(GLFWwindow* window)
 
   mirrorProgram.Activate();
   mirrorProgram.setInt("texture0", 99);
+  mirrorProgram.setInt("texSamples", antiAliasingSamples);
   mirrorProgram.setVec4("lightColor", lightColor);
   mirrorProgram.setVec3("lightPos", lightPos);
 
@@ -93,6 +96,8 @@ void runSceneOne(GLFWwindow* window)
   // Most games use a counter-clockwise standard for Front Faces, hence glFrontFace(GL_CCW): CCW=CounterClockWise
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
+  // Active multisampling (anit-aliasing)
+  glEnable(GL_MULTISAMPLE);
 
 	std::string modelPath = "resources/models/";
   Model mirror((modelPath + "mirror_blender/mirror.gltf").c_str(), 1, {}, {}, glm::vec3(0.02, 0.02, 0.02), glm::vec3(0.0, 0.0, 0.0));
@@ -124,18 +129,19 @@ void runSceneOne(GLFWwindow* window)
 
   unsigned int frameBufferTexture;
   glGenTextures(1, &frameBufferTexture);
-  glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cameraWidth, cameraHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameBufferTexture, 0);
+  // GL_TEXTURE_2D_MULTISAMPLE for Anti-Aliasing
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, frameBufferTexture);
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, antiAliasingSamples, GL_RGB, cameraWidth, cameraHeight, GL_TRUE);
+  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, frameBufferTexture, 0);
 
   unsigned int RBO;
   glGenRenderbuffers(1, &RBO);
   glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, cameraWidth, cameraHeight);
+  glRenderbufferStorageMultisample(GL_RENDERBUFFER, antiAliasingSamples, GL_DEPTH24_STENCIL8, cameraWidth, cameraHeight);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
 
   auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -192,10 +198,10 @@ void runSceneOne(GLFWwindow* window)
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-		// Specify the colour of the background
-		glClearColor(0.12f, 0.10f, 0.21f, 1.0f);
-		// Clean the back buffer and assign the new colour to it
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+    // Specify the colour of the background
+    glClearColor(0.12f, 0.10f, 0.21f, 1.0f);
+    // Clean the back buffer and assign the new colour to it
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -206,8 +212,8 @@ void runSceneOne(GLFWwindow* window)
     }
     if (inputMirror)
     {
-		  mirrorView.Inputs(window);
-		  mirrorView.updateMatrix(40.0f, 0.1f, 100.0f);
+      mirrorView.Inputs(window);
+      mirrorView.updateMatrix(40.0f, 0.1f, 100.0f);
     }
     else
     {
@@ -223,10 +229,10 @@ void runSceneOne(GLFWwindow* window)
 
     // Unbind the Framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	  grassground.Draw(shaderProgram, player.CharacterCamera);
-	  grass.Draw(grassProgram, player.CharacterCamera);
+    grassground.Draw(shaderProgram, player.CharacterCamera);
+    grass.Draw(grassProgram, player.CharacterCamera);
     mirror.Draw(shaderProgram, mirrorProgram, frameBufferTexture, player.CharacterCamera);
     ship.Draw(explosionProgram, player.CharacterCamera);
     statue.Draw(shaderProgram, player.CharacterCamera);
@@ -265,6 +271,9 @@ void runSceneTwo(GLFWwindow* window)
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
+
+  // Enable Anti-Aliasing
+  glEnable(GL_MULTISAMPLE);
 
   Camera camera(window, glm::vec3(0.0f, 0.0f, 2.0f));
 
@@ -376,6 +385,8 @@ int main()
 	// In this case we are using OpenGL 3.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  // Define the number of Samples for anti-aliasing.
+  glfwWindowHint(GLFW_SAMPLES, antiAliasingSamples);
 
 	// Tell GLFW we are using the CORE profile
 	// Core profile only contains modern functions
@@ -400,7 +411,7 @@ int main()
 	// In this case the viewport goes from x = 0, y = 0, to x = 800, y = 800
 	glViewport(0, 0, width, height);
 
-  runSceneTwo(window);
+  runSceneOne(window);
   // Delete window before ending the program
   glfwDestroyWindow(window);
   // Terminate GLFW before ending the program
