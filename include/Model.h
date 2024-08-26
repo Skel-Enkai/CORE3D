@@ -3,7 +3,9 @@
 
 #include <json/json.h>
 #include <glm/fwd.hpp>
+#include <string>
 #include <vector>
+
 #include "shaderClass.h"
 #include "Mesh.h"
 #include "Texture.h"
@@ -15,7 +17,7 @@ class Model
 public:
 	Model
   (
-    const char* file,
+    std::string file,
     unsigned int instancing = 1, 
     std::vector <glm::mat4> instanceMatrix = {},
     std::vector <glm::mat4> rotationMatrices = {},
@@ -39,7 +41,7 @@ public:
   glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
  
 private:
-	const char* file;
+  std::string file;
 	std::vector<unsigned char> data;
 	json JSON;
 

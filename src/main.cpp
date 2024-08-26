@@ -20,6 +20,7 @@
 #include "Camera.h"
 #include "Character.h"
 #include "Skybox.h"
+#include "PostProcessFrameBuffer.h"
 
 const unsigned short width = 2000;
 const unsigned short height = 1200;
@@ -28,6 +29,10 @@ const unsigned short cameraWidth = 1200;
 const unsigned short cameraHeight = 1200;
 
 const unsigned short antiAliasingSamples = 8;
+
+std::string modelPath = "resources/models/";
+std::string shaderPath = "resources/shaders/";
+std::string cubemapsPath = "resources/cubemaps/";
 
 // returns float between -1.0f and 1.0f
 float randf()
@@ -41,12 +46,11 @@ float randfPositive()
   return (static_cast<float>(rand()) /(static_cast<float>(RAND_MAX)));
 }
 
-void runSceneOne(GLFWwindow* window)
+void runSceneOne(GLFWwindow* window, PostProcessingFrameBuffer postProcessor)
 {
-	std::string shaderPath = "resources/shaders/";
   Shader shaderProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "default.frag"));
   Shader playerProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "player.frag"));
-  Shader mirrorProgram((shaderPath + "mirror.vert"), (shaderPath + "post-processing/anti-aliasing.frag"));
+  Shader mirrorProgram((shaderPath + "mirror.vert"), (shaderPath + "post-processing/anti-aliasing-mirror.frag"));
   Shader grassProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "grass.frag"));
   Shader skyboxProgram((shaderPath + "skybox/skybox.vert"), (shaderPath + "skybox/skybox.frag"));
 
@@ -70,10 +74,8 @@ void runSceneOne(GLFWwindow* window)
   playerProgram.setVec3("lightPos", lightPos);
 
   mirrorProgram.Activate();
-  mirrorProgram.setInt("texture0", 99);
+  mirrorProgram.setInt("multiSampler0", 99);
   mirrorProgram.setInt("texSamples", antiAliasingSamples);
-  mirrorProgram.setVec4("lightColor", lightColor);
-  mirrorProgram.setVec3("lightPos", lightPos);
 
   grassProgram.Activate();
   grassProgram.setVec4("lightColor", lightColor);
@@ -96,23 +98,23 @@ void runSceneOne(GLFWwindow* window)
   // Most games use a counter-clockwise standard for Front Faces, hence glFrontFace(GL_CCW): CCW=CounterClockWise
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
-  // Active multisampling (anit-aliasing)
-  glEnable(GL_MULTISAMPLE);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glClearColor(0.12f, 0.10f, 0.21f, 1.0f);
 
-	std::string modelPath = "resources/models/";
-  Model mirror((modelPath + "mirror_blender/mirror.gltf").c_str(), 1, {}, {}, glm::vec3(0.02, 0.02, 0.02), glm::vec3(0.0, 0.0, 0.0));
-  Model grassground((modelPath + "grassground/scene.gltf").c_str());
-  Model grass((modelPath + "grass/scene.gltf").c_str());
-  Model ship((modelPath + "spaceship/scene.gltf").c_str(), 1, {}, {}, glm::vec3(1, 1, 1), glm::vec3(8.0, 5, 10.0),
+  Model mirror(modelPath + "mirror_blender/mirror.gltf", 1, {}, {}, glm::vec3(0.02, 0.02, 0.02), glm::vec3(0.0, 0.0, 0.0));
+  Model grassground(modelPath + "grassground/scene.gltf");
+  Model grass(modelPath + "grass/scene.gltf");
+  Model ship(modelPath + "spaceship/scene.gltf", 1, {}, {}, glm::vec3(1, 1, 1), glm::vec3(8.0, 5, 10.0),
       glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0)));
-  Model statue((modelPath + "statue/scene.gltf").c_str(), 1, {}, {}, glm::vec3(8, 8, 8), glm::vec3(-5, 10.0, 10.0));
+  Model statue(modelPath + "statue/scene.gltf", 1, {}, {}, glm::vec3(8, 8, 8), glm::vec3(-5, 10.0, 10.0));
 
   // Set View from the Mirror
   Camera mirrorView(window, glm::vec3(2.102342, 4.342332, -6.394495));
   mirrorView.Orientation = glm::normalize(glm::vec3(-0.312417, 0.201481, 0.928328));
   mirrorView.updateMatrix(40.0f, 0.1f, 100.0f);
 
-  Character player(window, (modelPath + "crow/scene.gltf").c_str());
+  Character player(window, modelPath + "crow/scene.gltf");
   player.CharacterModel.scale = glm::vec3(0.4, 0.4, 0.4);
   player.positionOffset = glm::vec3(1.0, -5.0, 1.5);
   player.rotationOffset = glm::angleAxis(180.0f, glm::vec3(0.0, 1.0, 0.0));
@@ -122,34 +124,33 @@ void runSceneOne(GLFWwindow* window)
   double prevTime = 0.0;
   unsigned int framesPassed = 0;
 
-  // Frame buffer
-  unsigned int FBO;
-  glGenFramebuffers(1, &FBO);
-  glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+  // Mirror Frame Buffer -------------------------------------------------------------------------
+  unsigned int mirrorFBO;
+  glGenFramebuffers(1, &mirrorFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, mirrorFBO);
 
   unsigned int frameBufferTexture;
   glGenTextures(1, &frameBufferTexture);
   // GL_TEXTURE_2D_MULTISAMPLE for Anti-Aliasing
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, frameBufferTexture);
-  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, antiAliasingSamples, GL_RGB, cameraWidth, cameraHeight, GL_TRUE);
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, antiAliasingSamples, GL_RGB16F, cameraWidth, cameraHeight, GL_TRUE);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, frameBufferTexture, 0);
 
-  unsigned int RBO;
-  glGenRenderbuffers(1, &RBO);
-  glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+  unsigned int mirrorRBO;
+  glGenRenderbuffers(1, &mirrorRBO);
+  glBindRenderbuffer(GL_RENDERBUFFER, mirrorRBO);
   glRenderbufferStorageMultisample(GL_RENDERBUFFER, antiAliasingSamples, GL_DEPTH24_STENCIL8, cameraWidth, cameraHeight);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mirrorRBO);
 
   auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
     std::cout << "Framebuffer error: " << fboStatus << std::endl;
   // --------------------------------------------------------------------------------------------
 
-  std::string cubemapsPath = "resources/cubemaps/";
   std::array<std::string, 6> skyboxPaths =
   {
     cubemapsPath + "sky/right.jpg",
@@ -197,14 +198,9 @@ void runSceneOne(GLFWwindow* window)
       // Delta time should be used for accurate results.
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-    // Specify the colour of the background
-    glClearColor(0.12f, 0.10f, 0.21f, 1.0f);
+    glBindFramebuffer(GL_FRAMEBUFFER, mirrorFBO);
     // Clean the back buffer and assign the new colour to it
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
 
     if (glfwGetKey(window, GLFW_KEY_CAPS_LOCK) == GLFW_PRESS)
     {
@@ -227,8 +223,8 @@ void runSceneOne(GLFWwindow* window)
     statue.Draw(shaderProgram, mirrorView);
     scenebox.Draw(skyboxProgram, mirrorView);
 
-    // Unbind the Framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // Draw to PostProcessor
+    postProcessor.Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     grassground.Draw(shaderProgram, player.CharacterCamera);
@@ -240,15 +236,18 @@ void runSceneOne(GLFWwindow* window)
     statue.Draw(normalsProgram, player.CharacterCamera);
     scenebox.Draw(skyboxProgram, player.CharacterCamera);
 
+    // Unbind and PostProcess the Image
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    postProcessor.Draw();
+
     glfwSwapBuffers(window);
     // Take care of all GLFW events
     glfwPollEvents();
   }
 }
 
-void runSceneTwo(GLFWwindow* window)
+void runSceneTwo(GLFWwindow* window, PostProcessingFrameBuffer postProcessor)
 {
-	std::string shaderPath = "resources/shaders/";
   Shader asteroidProgram((shaderPath + "instancing/asteroid.vert"), (shaderPath + "default.geom"), (shaderPath + "default.frag"));
   Shader shaderProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "default.frag"));
   Shader skyboxProgram((shaderPath + "skybox/skybox.vert"), (shaderPath + "skybox/skybox.frag"));
@@ -271,14 +270,11 @@ void runSceneTwo(GLFWwindow* window)
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
-
-  // Enable Anti-Aliasing
-  glEnable(GL_MULTISAMPLE);
+  glClearColor(0.12f, 0.10f, 0.21f, 1.0f);
 
   Camera camera(window, glm::vec3(0.0f, 0.0f, 2.0f));
 
-	std::string modelPath = "resources/models/";
-  Model jupiter((modelPath + "jupiter/scene.gltf").c_str());
+  Model jupiter(modelPath + "jupiter/scene.gltf");
 
   const unsigned int numAsteroids = 5000;
   float radius = 100.0f;
@@ -318,9 +314,8 @@ void runSceneTwo(GLFWwindow* window)
     instanceMatrix.push_back(trans * sca);
     rotationMatrix.push_back(rot);
   }
-  Model asteriod((modelPath + "asteroid/scene.gltf").c_str(), numAsteroids, instanceMatrix, rotationMatrix);
+  Model asteriod(modelPath + "asteroid/scene.gltf", numAsteroids, instanceMatrix, rotationMatrix);
 
-  std::string cubemapsPath = "resources/cubemaps/";
   std::array<std::string, 6> spacePaths =
   {
     cubemapsPath + "space/right.png",
@@ -358,9 +353,8 @@ void runSceneTwo(GLFWwindow* window)
       // Delta time should be used for accurate results.
     }
 
-		// Specify the colour of the background
-		glClearColor(0.12f, 0.10f, 0.21f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    postProcessor.Bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     camera.Inputs(window);
     camera.updateMatrix(45.0f, 0.1f, 1000.0f);
@@ -369,6 +363,9 @@ void runSceneTwo(GLFWwindow* window)
     asteriod.Draw(asteroidProgram, camera);
 
     space.Draw(skyboxProgram, camera);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    postProcessor.Draw();
 
     glfwSwapBuffers(window);
     // Take care of all GLFW events
@@ -406,16 +403,24 @@ int main()
 
 	// Load GLAD so it configures OpenGL
 	gladLoadGL();
-	
 	// Specify the viewport of OpenGL in the Window 
 	// In this case the viewport goes from x = 0, y = 0, to x = 800, y = 800
 	glViewport(0, 0, width, height);
 
-  runSceneOne(window);
+  
+  PostProcessingFrameBuffer postProcessor
+    (
+      (shaderPath + "post-processing/framebuffer.vert"), 
+      (shaderPath + "post-processing/post-processor.frag"),
+      101,
+      width,
+      height
+    );
+
+  runSceneOne(window, postProcessor);
   // Delete window before ending the program
   glfwDestroyWindow(window);
   // Terminate GLFW before ending the program
   glfwTerminate();
   return 0;
 }
-

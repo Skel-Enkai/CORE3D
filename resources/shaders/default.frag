@@ -17,6 +17,8 @@ uniform vec4 lightColor;
 uniform vec3 lightPos;
 uniform vec3 camPos;
 
+float specularLight = 0.45f;
+
 // Inverse Square Law (Point Light)
 vec4 pointLight() 
 {
@@ -41,11 +43,15 @@ vec4 pointLight()
 	float diffuse = max(dot(normal, -lightDirection), 0.0f);
 
 	// Specular lighting
-	float specularLight = 0.25f;
-	vec3 viewDirection = normalize(camPos -Position);
-	vec3 reflectionDirection = reflect(lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
-	float specular = specAmount * specularLight;
+  float specular = 0.0f;
+  if (diffuse != 0.0f)
+  {
+    vec3 viewDirection = normalize(Position - camPos);
+	  // Blinn-Phong Halfway Vector
+    vec3 halfwayVec = -normalize(viewDirection + lightDirection);
+	  float specAmount = pow(max(dot(normal, halfwayVec), 0.0f), 32);
+	  specular = specAmount * specularLight;
+  }
 	
 	// Display distance zones
 //	if (dist > 2.0f) {
@@ -73,11 +79,15 @@ vec4 directLight()
 	float diffuse = max(dot(normal, -lightDirection), 0.0f);
 
 	// Specular lighting
-	float specularLight = 1.0f;
-	vec3 viewDirection = normalize(camPos -Position);
-	vec3 reflectionDirection = reflect(lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
-	float specular = specAmount * specularLight;
+  float specular = 0.0f;
+  if (diffuse != 0.0f)
+  {
+    vec3 viewDirection = normalize(Position - camPos);
+	  // Blinn-Phong Halfway Vector
+    vec3 halfwayVec = -normalize(viewDirection + lightDirection);
+	  float specAmount = pow(max(dot(normal, halfwayVec), 0.0f), 32);
+	  specular = specAmount * specularLight;
+  }
 
 //  if (normal.y > 0.8)
 //    return vec4(0.0, 1.0, 0.0, 1.0);
@@ -108,11 +118,15 @@ vec4 spotLight()
 	float diffuse = max(dot(normal, -lightDirection), 0.0f);
 
 	// Specular lighting
-	float specularLight = 0.25f;
-	vec3 viewDirection = normalize(camPos -Position);
-	vec3 reflectionDirection = reflect(lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
-	float specular = specAmount * specularLight;
+  float specular = 0.0f;
+  if (diffuse != 0.0f)
+  {
+    vec3 viewDirection = normalize(Position - camPos);
+	  // Blinn-Phong Halfway Vector
+    vec3 halfwayVec = -normalize(viewDirection + lightDirection);
+	  float specAmount = pow(max(dot(normal, halfwayVec), 0.0f), 32);
+	  specular = specAmount * specularLight;
+  }
 
 	float angle = dot(vec3(0.0f, -1.0f, 0.0f), lightDirection);
 	float intensity = clamp((outerCone - angle) / (outerCone - innerCone), 0.0f, 1.0f);

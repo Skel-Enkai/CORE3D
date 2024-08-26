@@ -1,7 +1,7 @@
 #include"Texture.h"
 #include<iostream>
 
-Texture::Texture(const char* image, const char* texType, GLint slot)
+Texture::Texture(const char* image, std::string texType, GLint slot)
 {
 	type = texType;
 	int widthImg, heightImg, numColCh;
@@ -30,15 +30,30 @@ Texture::Texture(const char* image, const char* texType, GLint slot)
 	// float flatColor[] = {1.0f, 1.0f, 1.0f, 1.0f}
 	// glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, flatColor);
 
-	// If statements without brackets just execute the first line after the statement
-	if (numColCh == 4)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widthImg, heightImg, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
-	else if (numColCh == 3)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widthImg, heightImg, 0, GL_RGB, GL_UNSIGNED_BYTE, bytes);
-	else if (numColCh == 1)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widthImg, heightImg, 0, GL_RED, GL_UNSIGNED_BYTE, bytes);
-	else
-		throw std::invalid_argument("Automatic Texture type recognition failed.");
+  // returns texture is SRGB space
+  if (type == "diffuse")
+  {
+    if (numColCh == 4)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, widthImg, heightImg, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+    else if (numColCh == 3)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, widthImg, heightImg, 0, GL_RGB, GL_UNSIGNED_BYTE, bytes);
+    else if (numColCh == 1)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, widthImg, heightImg, 0, GL_RED, GL_UNSIGNED_BYTE, bytes);
+    else
+      throw std::invalid_argument("Automatic Texture type recognition failed.");
+  }
+  // returns texture in linear space
+  else 
+  {
+    if (numColCh == 4)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widthImg, heightImg, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+    else if (numColCh == 3)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthImg, heightImg, 0, GL_RGB, GL_UNSIGNED_BYTE, bytes);
+    else if (numColCh == 1)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, widthImg, heightImg, 0, GL_RED, GL_UNSIGNED_BYTE, bytes);
+    else
+      throw std::invalid_argument("Automatic Texture type recognition failed.");
+  }
 
 
 	glGenerateMipmap(GL_TEXTURE_2D);

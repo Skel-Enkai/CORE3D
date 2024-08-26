@@ -12,8 +12,9 @@ include_directories(
 )
 
 file(GLOB all_SRCS
-  "${PROJECT_SOURCE_DIR}/src/*.cpp"
-	"${PROJECT_SOURCE_DIR}/src/*.c"
+  "${PROJECT_SOURCE_DIR}/src/*/*.cpp"
+	"${PROJECT_SOURCE_DIR}/src/*/*.c"
+  "${PROJECT_SOURCE_DIR}/src/main.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${all_SRCS})

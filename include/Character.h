@@ -2,14 +2,16 @@
 #define CHARACTER_CLASS_H
 
 #include "Model.h"
-#include<GLFW/glfw3.h>
+
+#include <GLFW/glfw3.h>
+#include <string>
 
 class Character
 {
   public:
     Camera CharacterCamera;
     Model CharacterModel;
-		Character(GLFWwindow* window, const char* modelPath);
+		Character(GLFWwindow* window, std::string modelPath);
     void Draw(Shader& shader);
     void Draw(Shader& shader, Camera& camera);
     void Update(GLFWwindow* window, float FOVdeg, float nearPlane, float farPlane);

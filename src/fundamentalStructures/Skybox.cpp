@@ -43,7 +43,7 @@ SkyBox::SkyBox(const std::array<std::string, 6>& arr)
       (
         GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
         0,
-        GL_RGB,
+        GL_SRGB,
         width, 
         height, 
         0,
@@ -66,14 +66,14 @@ void SkyBox::Draw(Shader& shader, Camera& camera)
   glDepthFunc(GL_LEQUAL);
   glDepthMask(GL_FALSE);
   shader.Activate();
-	camera.setSkyboxMatrix(shader, "camMatrix");
-  
-  glBindVertexArray(skyboxVAO.ID);
+  camera.setSkyboxMatrix(shader, "camMatrix");
+
+  skyboxVAO.Bind();
   glActiveTexture(GL_TEXTURE0 + 100);
   glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
   glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-  glBindVertexArray(0);
-  
+  skyboxVAO.Unbind();
+
   glDepthFunc(GL_LESS);
   glDepthMask(GL_TRUE);
 }

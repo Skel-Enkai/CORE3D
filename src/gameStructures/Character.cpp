@@ -5,8 +5,9 @@
 #include "glm/fwd.hpp"
 #include "glm/geometric.hpp"
 #include "shaderClass.h"
+#include <string>
 
-Character::Character(GLFWwindow* window, const char* modelPath) : CharacterModel(modelPath), CharacterCamera(window) {}
+Character::Character(GLFWwindow* window, std::string modelPath) : CharacterModel(modelPath), CharacterCamera(window) {}
 
 void Character::Update(GLFWwindow* window, float FOVdeg, float nearPlane, float farPlane)
 {

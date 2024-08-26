@@ -31,11 +31,16 @@ vec4 directLight()
 	float diffuse = max(abs(dot(normal, -lightDirection)), 0.0f);
 
 	// Specular lighting
-	float specularLight = 0.2f;
-	vec3 viewDirection = normalize(camPos -Position);
-	vec3 reflectionDirection = reflect(lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
-	float specular = specAmount * specularLight;
+  float specular = 0.0f;
+  if (diffuse != 0.0f)
+  {
+	  float specularLight = 0.45f;
+    vec3 viewDirection = normalize(Position - camPos);
+	  // Blinn-Phong Halfway Vector
+    vec3 halfwayVec = -normalize(viewDirection + lightDirection);
+	  float specAmount = pow(max(dot(normal, halfwayVec), 0.0f), 32);
+	  specular = specAmount * specularLight;
+  }
 
   // If Alpha Value is very low, don't even bother drawing it!
   if (texture(diffuse0, TexCoord).a < 0.1)

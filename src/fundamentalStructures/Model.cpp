@@ -9,7 +9,7 @@
 
 Model::Model
 (
-  const char* file, 
+  std::string file, 
   unsigned int instanceNum,
   std::vector <glm::mat4> instanceMatrices,
   std::vector <glm::mat4> rotationMatrices,
@@ -18,7 +18,7 @@ Model::Model
   glm::quat rot
 )
 {
-	std::string text = get_file_contents(file);
+	std::string text = get_file_contents(file.c_str());
 	JSON = json::parse(text);
 
 	Model::file = file;
