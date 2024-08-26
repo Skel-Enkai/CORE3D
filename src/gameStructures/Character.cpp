@@ -7,9 +7,9 @@
 #include "shaderClass.h"
 #include <string>
 
-Character::Character(GLFWwindow* window, std::string modelPath) : CharacterModel(modelPath), CharacterCamera(window) {}
+Character::Character(GLFWwindow *window, std::string modelPath) : CharacterModel(modelPath), CharacterCamera(window) {}
 
-void Character::Update(GLFWwindow* window, float FOVdeg, float nearPlane, float farPlane)
+void Character::Update(GLFWwindow *window, float FOVdeg, float nearPlane, float farPlane)
 {
   CharacterCamera.Inputs(window);
   CharacterCamera.updateMatrix(FOVdeg, nearPlane, farPlane);
@@ -36,14 +36,8 @@ void Character::Update(GLFWwindow* window, float FOVdeg, float nearPlane, float 
     rotation.w = w;
     CharacterModel.rotation = glm::normalize(rotation * rotationOffset);
   }
- }
-
-void Character::Draw(Shader& shader)
-{
-  CharacterModel.Draw(shader, CharacterCamera);
 }
 
-void Character::Draw(Shader& shader, Camera& camera)
-{
-  CharacterModel.Draw(shader, camera);
-}
+void Character::Draw(Shader &shader) { CharacterModel.Draw(shader, CharacterCamera); }
+
+void Character::Draw(Shader &shader, Camera &camera) { CharacterModel.Draw(shader, camera); }

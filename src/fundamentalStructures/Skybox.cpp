@@ -1,13 +1,13 @@
 #include "Skybox.h"
 
-#include<stb/stb_image.h>
-#include<iostream>
+#include <iostream>
+#include <stb/stb_image.h>
 
 #include "Camera.h"
-#include "VAO.h"
 #include "EBO.h"
+#include "VAO.h"
 
-SkyBox::SkyBox(const std::array<std::string, 6>& arr)
+SkyBox::SkyBox(const std::array<std::string, 6> &arr)
 {
   skyboxVAO.Bind();
 
@@ -15,7 +15,7 @@ SkyBox::SkyBox(const std::array<std::string, 6>& arr)
   VBO skyboxVBO(skyboxVertices, sizeof(skyboxVertices));
   EBO skyboxEBO(skyboxIndices, sizeof(skyboxIndices));
 
-  skyboxVAO.LinkAttrib(skyboxVBO, 0, 3, GL_FLOAT, 3 * sizeof(float), (void*)0);
+  skyboxVAO.LinkAttrib(skyboxVBO, 0, 3, GL_FLOAT, 3 * sizeof(float), (void *)0);
 
   skyboxVAO.Unbind();
   skyboxVBO.Unbind();
@@ -35,22 +35,11 @@ SkyBox::SkyBox(const std::array<std::string, 6>& arr)
   for (unsigned int i = 0; i < 6; i++)
   {
     int width, height, nrChannels;
-    unsigned char* data = stbi_load(pathsList[i].c_str(), &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load(pathsList[i].c_str(), &width, &height, &nrChannels, 0);
     if (data)
     {
       stbi_set_flip_vertically_on_load(false);
-      glTexImage2D
-      (
-        GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
-        0,
-        GL_SRGB,
-        width, 
-        height, 
-        0,
-        GL_RGB, 
-        GL_UNSIGNED_BYTE,
-        data
-      );
+      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_SRGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
       stbi_image_free(data);
     }
     else
@@ -61,7 +50,7 @@ SkyBox::SkyBox(const std::array<std::string, 6>& arr)
   }
 }
 
-void SkyBox::Draw(Shader& shader, Camera& camera)
+void SkyBox::Draw(Shader &shader, Camera &camera)
 {
   glDepthFunc(GL_LEQUAL);
   glDepthMask(GL_FALSE);

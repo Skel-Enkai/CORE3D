@@ -1,27 +1,24 @@
-#include<iostream>
+#include <iostream>
 
 #include "PostProcessFrameBuffer.h"
 #include "VAO.h"
 #include "shaderClass.h"
 
-PostProcessingFrameBuffer::PostProcessingFrameBuffer
-(
- std::string vertexFile, 
- std::string fragmentFile, 
- unsigned int glTextureU,
- unsigned int width,
- unsigned int height,
- unsigned short antiAliasingSamples,
- float gammaCorrection
-) 
-  : postProcessingShader(vertexFile.c_str(), fragmentFile.c_str())
+PostProcessingFrameBuffer::PostProcessingFrameBuffer(std::string vertexFile,
+                                                     std::string fragmentFile,
+                                                     unsigned int glTextureU,
+                                                     unsigned int width,
+                                                     unsigned int height,
+                                                     unsigned short antiAliasingSamples,
+                                                     float gammaCorrection)
+  : postProcessingShader(vertexFile, fragmentFile)
 {
   glTextureUnit = glTextureU;
 
   rectVAO.Bind();
   VBO rectVBO(rectangleVertices, sizeof(rectangleVertices));
-  rectVAO.LinkAttrib(rectVBO, 0, 2, GL_FLOAT, 4 * sizeof(float), (void*)0);
-  rectVAO.LinkAttrib(rectVBO, 1, 2, GL_FLOAT, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+  rectVAO.LinkAttrib(rectVBO, 0, 2, GL_FLOAT, 4 * sizeof(float), (void *)0);
+  rectVAO.LinkAttrib(rectVBO, 1, 2, GL_FLOAT, 4 * sizeof(float), (void *)(2 * sizeof(float)));
   rectVBO.Unbind();
   rectVAO.Unbind();
 
@@ -43,10 +40,9 @@ PostProcessingFrameBuffer::PostProcessingFrameBuffer
   glBindRenderbuffer(GL_RENDERBUFFER, RBO);
   glRenderbufferStorageMultisample(GL_RENDERBUFFER, antiAliasingSamples, GL_DEPTH24_STENCIL8, width, height);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
-  
+
   auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
-    std::cout << "Framebuffer error: " << fboStatus << std::endl;
+  if (fboStatus != GL_FRAMEBUFFER_COMPLETE) std::cout << "Framebuffer error: " << fboStatus << std::endl;
 
   postProcessingShader.Activate();
   postProcessingShader.setInt("multiSampler0", glTextureUnit);
@@ -54,15 +50,9 @@ PostProcessingFrameBuffer::PostProcessingFrameBuffer
   postProcessingShader.setFloat("gamma", gammaCorrection);
 }
 
-void PostProcessingFrameBuffer::Unbind()
-{
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
+void PostProcessingFrameBuffer::Unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
-void PostProcessingFrameBuffer::Bind()
-{
-  glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-}
+void PostProcessingFrameBuffer::Bind() { glBindFramebuffer(GL_FRAMEBUFFER, FBO); }
 
 void PostProcessingFrameBuffer::Draw()
 {
