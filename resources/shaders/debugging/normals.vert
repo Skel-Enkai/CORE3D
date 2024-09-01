@@ -1,3 +1,4 @@
+	
 #version 330 core
 
 layout (location = 0) in vec3 aPos;
@@ -11,7 +12,6 @@ out DATA
   vec3 Colour;
   vec2 TexCoord;
   mat4 projection;
-  mat4 lightProjection;
 } data_out;
 
 // The final view matrix formed by the Camera 
@@ -21,8 +21,6 @@ uniform mat4 initMatrix;
 uniform mat4 translation;
 uniform mat4 rotation;
 uniform mat4 scale;
-// Shadow matrices
-uniform mat4 lightProjection;
 
 void main()
 {
@@ -32,5 +30,4 @@ void main()
   data_out.Colour = aColour;
   data_out.TexCoord = aTex;
   data_out.projection = camMatrix;
-  data_out.lightProjection = lightProjection;
 }

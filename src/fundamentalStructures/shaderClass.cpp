@@ -23,6 +23,31 @@ std::string get_file_contents(const char *filename)
   throw(errno);
 }
 
+Shader::Shader(std::string vertexFile)
+{
+  std::string vertexCode = get_file_contents(vertexFile.c_str());
+  const char *vertexSource = vertexCode.c_str();
+
+  // Create Vertex Shader Object and get its reference
+  GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+  // Attach Vertex Shader source to the Vertex Shader Object
+  glShaderSource(vertexShader, 1, &vertexSource, NULL);
+  // Compile the Vertex Shader into machine code
+  glCompileShader(vertexShader);
+  logErrors(vertexShader, "VERTEX", vertexFile);
+
+  // Create Shader Program Object and get its reference
+  ID = glCreateProgram();
+  // Attach the Vertex and Fragment Shaders to the Shader Program
+  glAttachShader(ID, vertexShader);
+  // Wrap-up/Link all the shaders together into the Shader Program
+  glLinkProgram(ID);
+  logErrors(ID, "PROGRAM");
+
+  // Delete the now useless Vertex and Shader objects
+  glDeleteShader(vertexShader);
+}
+
 Shader::Shader(std::string vertexFile, std::string fragmentFile)
 {
   std::string vertexCode = get_file_contents(vertexFile.c_str());

@@ -41,3 +41,5 @@ void Character::Update(GLFWwindow *window, float FOVdeg, float nearPlane, float 
 void Character::Draw(Shader &shader) { CharacterModel.Draw(shader, CharacterCamera); }
 
 void Character::Draw(Shader &shader, Camera &camera) { CharacterModel.Draw(shader, camera); }
+
+void Character::DrawShadow(Shader &shader) { CharacterModel.DrawShadow(shader); }

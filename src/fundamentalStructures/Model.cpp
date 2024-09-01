@@ -73,6 +73,17 @@ void Model::Draw(Shader &shader, Shader &secondaryShader, unsigned int mirrorTex
                          scalesMeshes[i] * scale);
 }
 
+void Model::DrawShadow(Shader &shader)
+{
+  shader.Activate();
+  for (unsigned int i = 0; i < meshes.size(); i++)
+    meshes[i].Mesh::Draw(shader,
+                         matricesMeshes[i],
+                         translationsMeshes[i] + position,
+                         rotationsMeshes[i] * rotation,
+                         scalesMeshes[i] * scale);
+}
+
 void Model::SetTextures(Shader &shader)
 {
   unsigned int numDiffuse = 0;

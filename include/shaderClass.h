@@ -11,6 +11,7 @@ std::string get_file_contents(const char *filename);
 class Shader
 {
 public:
+  Shader(std::string vertexFile);
   Shader(std::string vertexFile, std::string fragmentFile);
   Shader(std::string vertexFile, std::string geometryFile, std::string fragmentFile);
 

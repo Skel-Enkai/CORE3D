@@ -25,6 +25,8 @@ public:
 
   void Draw(Shader &shader, Camera &camera);
   void Draw(Shader &shader, Shader &secondaryShader, unsigned int mirrorTexture, Camera &camera);
+  void DrawShadow(Shader &shader);
+
   void SetTextures(Shader &shader);
 
   glm::vec3 position = glm::vec3(1.0, 1.0, 1.0);

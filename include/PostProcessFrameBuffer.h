@@ -21,6 +21,7 @@ public:
   void Bind();
   void Unbind();
   void Draw();
+  void DrawTexture(unsigned int texUnit);
 
 private:
   float rectangleVertices[24] = {

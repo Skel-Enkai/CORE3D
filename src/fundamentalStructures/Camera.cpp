@@ -1,6 +1,11 @@
 #include "Camera.h"
+
+#include <glm/ext/vector_float3.hpp>
 #include <GLFW/glfw3.h>
 #include <glm/ext/quaternion_geometric.hpp>
+#include <glm/gtx/string_cast.hpp>
+
+/*#include <iostream>*/
 
 Camera::Camera(GLFWwindow *window, glm::vec3 position)
 {
@@ -20,6 +25,13 @@ void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane)
     glm::radians(FOVdeg), (static_cast<float>(Width) / static_cast<float>(Height)), nearPlane, farPlane);
   // Sets new camera matrix
   cameraMatrix = projection * view;
+
+  // Orthographic View Callibration
+  /*glm::mat4 orthogonalProjection = glm::ortho(-26.0f, 26.0f, -26.0f, 26.0f, 0.1f, 100.0f);*/
+  /*glm::mat4 lightView = glm::lookAt(glm::vec3(0.0, 15.0, 0.0), glm::vec3(0.0f, 14.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));*/
+  /*std::cout << glm::to_string(Position) << glm::to_string(Position + Orientation) << std::endl;*/
+  /*cameraMatrix = orthogonalProjection * lightView;*/
+
   skyboxMatrix = projection * glm::mat4(glm::mat3(view));
 }
 

@@ -62,6 +62,33 @@ Mesh::Mesh(std::vector<Vertex> &vertices,
 }
 
 void Mesh::Draw(
+  Shader &shader, glm::mat4 matrix, glm::vec3 translation, glm::quat rotation, glm::vec3 scale)
+{
+  mVAO.Bind();
+
+  if (instancing == 1)
+  {
+    // forms matrices
+    glm::mat4 trans = glm::translate(glm::mat4(1.0f), translation);
+    glm::mat4 rot = glm::mat4_cast(rotation);
+    glm::mat4 sca = glm::scale(glm::mat4(1.0f), scale);
+
+    // sends matrices to the Shader
+    shader.setMat4("translation", trans);
+    shader.setMat4("rotation", rot);
+    shader.setMat4("scale", sca);
+    shader.setMat4("initMatrix", matrix);
+
+    // Draw the actual Mesh
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+  }
+  else
+  {
+    glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, instancing);
+  }
+}
+
+void Mesh::Draw(
   Shader &shader, Camera &camera, glm::mat4 matrix, glm::vec3 translation, glm::quat rotation, glm::vec3 scale)
 {
   mVAO.Bind();

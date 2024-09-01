@@ -18,11 +18,16 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/trigonometric.hpp>
 #include <stb/stb_image.h>
+#include <vector>
 
 #include "Camera.h"
 #include "Character.h"
 #include "PostProcessFrameBuffer.h"
+#include "ShadowMap.h"
 #include "Skybox.h"
+#include "GlobalConstants.h"
+#include "glm/ext/vector_float3.hpp"
+#include "shaderClass.h"
 
 const unsigned short width = 2000;
 const unsigned short height = 1200;
@@ -31,10 +36,6 @@ const unsigned short cameraWidth = 1200;
 const unsigned short cameraHeight = 1200;
 
 const unsigned short antiAliasingSamples = 8;
-
-std::string modelPath = "resources/models/";
-std::string shaderPath = "resources/shaders/";
-std::string cubemapsPath = "resources/cubemaps/";
 
 // returns float between -1.0f and 1.0f
 float randf() { return -1.0f + (rand() / (RAND_MAX / 2.0f)); }
@@ -50,15 +51,15 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
   Shader grassProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "grass.frag"));
   Shader skyboxProgram((shaderPath + "skybox/skybox.vert"), (shaderPath + "skybox/skybox.frag"));
 
-  Shader reflectionProgram(
-    (shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "skybox/reflection.frag"));
-  Shader refractionProgram(
-    (shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "skybox/refraction.frag"));
-  Shader explosionProgram(
-    (shaderPath + "default.vert"), (shaderPath + "effects/explosion.geom"), (shaderPath + "default.frag"));
+  /*Shader reflectionProgram(*/
+  /*  (shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "skybox/reflection.frag"));*/
+  /*Shader refractionProgram(*/
+  /*  (shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "skybox/refraction.frag"));*/
+  /*Shader explosionProgram(*/
+  /*  (shaderPath + "default.vert"), (shaderPath + "effects/explosion.geom"), (shaderPath + "default.frag"));*/
   // Debugging Shader
   Shader normalsProgram(
-    (shaderPath + "default.vert"), (shaderPath + "debugging/normals.geom"), (shaderPath + "debugging/normals.frag"));
+    (shaderPath + "debugging/normals.vert"), (shaderPath + "debugging/normals.geom"), (shaderPath + "debugging/normals.frag"));
 
   // Generate light colour and position
   glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -84,15 +85,15 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
   skyboxProgram.Activate();
   skyboxProgram.setInt("skybox", 100);
 
-  reflectionProgram.Activate();
-  reflectionProgram.setInt("skybox", 100);
+  /*reflectionProgram.Activate();*/
+  /*reflectionProgram.setInt("skybox", 100);*/
 
-  refractionProgram.Activate();
-  refractionProgram.setInt("skybox", 100);
+  /*refractionProgram.Activate();*/
+  /*refractionProgram.setInt("skybox", 100);*/
 
-  explosionProgram.Activate();
-  explosionProgram.setVec4("lightColor", lightColor);
-  explosionProgram.setVec3("lightPos", lightPos);
+  /*explosionProgram.Activate();*/
+  /*explosionProgram.setVec4("lightColor", lightColor);*/
+  /*explosionProgram.setVec3("lightPos", lightPos);*/
 
   // Faces are identified as front or back via their clockwise or
   // counter-clockwise indicy rotation. Most games use a counter-clockwise
@@ -172,7 +173,9 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
                                               cubemapsPath + "seamountains/back.jpg"};
 
   SkyBox scenebox(skyboxPaths);
-
+  ShadowMap sceneShadow(4000, 4000, 98, glm::vec3(0.0, 15.0, 0.0));
+  std::vector <Shader> shadowShaders = { grassProgram, shaderProgram, playerProgram };
+  sceneShadow.AttachMap(shadowShaders);
   bool inputMirror = false;
 
   // Main while loop
@@ -196,9 +199,16 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
        * glm::to_string(mirrorView.Orientation) << std::endl;*/
 
       // You could put Input functions in here, as otherwise game time is linked
-      // to FPS, however, this causes tearing as slower update than FPS update.
+      // to FPS, however, this causes tmakmearing as slower update than FPS update.
       // Delta time should be used for accurate results.
     }
+    // Draw to ShadowMap
+    sceneShadow.Bind();
+    sceneShadow.DrawToMap(player);
+    sceneShadow.DrawToMap(ship);
+    sceneShadow.DrawToMap(statue);
+    sceneShadow.DrawToMap(mirror);
+    sceneShadow.Unbind(width, height);
 
     glBindFramebuffer(GL_FRAMEBUFFER, mirrorFBO);
     // Clean the back buffer and assign the new colour to it
@@ -221,7 +231,7 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
     grassground.Draw(shaderProgram, mirrorView);
     grass.Draw(grassProgram, mirrorView);
     player.Draw(playerProgram, mirrorView);
-    ship.Draw(refractionProgram, mirrorView);
+    ship.Draw(shaderProgram, mirrorView);
     statue.Draw(shaderProgram, mirrorView);
     scenebox.Draw(skyboxProgram, mirrorView);
 
@@ -232,10 +242,8 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
     grassground.Draw(shaderProgram, player.CharacterCamera);
     grass.Draw(grassProgram, player.CharacterCamera);
     mirror.Draw(shaderProgram, mirrorProgram, frameBufferTexture, player.CharacterCamera);
-    ship.Draw(explosionProgram, player.CharacterCamera);
+    ship.Draw(shaderProgram, player.CharacterCamera);
     statue.Draw(shaderProgram, player.CharacterCamera);
-    // Display Normals for debugging
-    statue.Draw(normalsProgram, player.CharacterCamera);
     scenebox.Draw(skyboxProgram, player.CharacterCamera);
 
     // Unbind and PostProcess the Image

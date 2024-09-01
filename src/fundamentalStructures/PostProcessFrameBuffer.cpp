@@ -68,3 +68,19 @@ void PostProcessingFrameBuffer::Draw()
   rectVAO.Unbind();
   glEnable(GL_DEPTH_TEST);
 }
+
+void PostProcessingFrameBuffer::DrawTexture(unsigned int texUnit)
+{
+  glActiveTexture(GL_TEXTURE0 + glTextureUnit);
+  glBindTexture(GL_TEXTURE_2D, texUnit);
+
+  glDisable(GL_DEPTH_TEST);
+  rectVAO.Bind();
+
+  postProcessingShader.Activate();
+  postProcessingShader.setInt("screenTexture", glTextureUnit);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+
+  rectVAO.Unbind();
+  glEnable(GL_DEPTH_TEST);
+}
