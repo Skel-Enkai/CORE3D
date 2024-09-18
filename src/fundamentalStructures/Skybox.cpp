@@ -1,14 +1,17 @@
-#include "Skybox.h"
+#include "fs/Skybox.h"
 
 #include <iostream>
-#include <stb/stb_image.h>
+#include <libraries/stb/stb_image.h>
 
-#include "Camera.h"
-#include "EBO.h"
-#include "VAO.h"
+#include "GlobalConstants.h"
+#include "ds/EBO.h"
+#include "ds/VAO.h"
+#include "fs/Camera.h"
 
-SkyBox::SkyBox(const std::array<std::string, 6> &arr)
+SkyBox::SkyBox(const std::array<std::string, 6> &arr, GLushort texU, std::string vertexFile, std::string fragFile)
+  : skyboxShader(shaderPath + vertexFile, shaderPath + fragFile)
 {
+  texUnit = texU;
   skyboxVAO.Bind();
 
   // Just creating these objects sets the VAO data to their contents.
@@ -24,7 +27,7 @@ SkyBox::SkyBox(const std::array<std::string, 6> &arr)
   std::copy(arr.begin(), arr.end(), pathsList.begin());
 
   glGenTextures(1, &textureID);
-  glActiveTexture(GL_TEXTURE0 + 100);
+  glActiveTexture(GL_TEXTURE0 + texUnit);
   glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -48,6 +51,25 @@ SkyBox::SkyBox(const std::array<std::string, 6> &arr)
       stbi_image_free(data);
     }
   }
+  skyboxShader.Activate();
+  skyboxShader.setInt("skybox", texUnit);
+}
+
+void SkyBox::Draw(Camera &camera)
+{
+  glDepthFunc(GL_LEQUAL);
+  glDepthMask(GL_FALSE);
+  skyboxShader.Activate();
+  camera.setSkyboxMatrix(skyboxShader, "camMatrix");
+
+  skyboxVAO.Bind();
+  glActiveTexture(GL_TEXTURE0 + texUnit);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+  skyboxVAO.Unbind();
+
+  glDepthFunc(GL_LESS);
+  glDepthMask(GL_TRUE);
 }
 
 void SkyBox::Draw(Shader &shader, Camera &camera)
@@ -58,7 +80,7 @@ void SkyBox::Draw(Shader &shader, Camera &camera)
   camera.setSkyboxMatrix(shader, "camMatrix");
 
   skyboxVAO.Bind();
-  glActiveTexture(GL_TEXTURE0 + 100);
+  glActiveTexture(GL_TEXTURE0 + texUnit);
   glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
   glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
   skyboxVAO.Unbind();

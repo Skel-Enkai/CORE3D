@@ -5,8 +5,8 @@
 
 #include <GLFW/glfw3.h>
 
-#include "VAO.h"
-#include "shaderClass.h"
+#include "ds/VAO.h"
+#include "fs/Shader.h"
 
 class PostProcessingFrameBuffer
 {
@@ -34,7 +34,7 @@ private:
     -1.0f,  1.0f,     0.0f, 1.0f, 
      1.0f, -1.0f,     1.0f, 0.0f};
 
-  unsigned int RBO, FBO, frameBufferTexture, glTextureUnit;
+  unsigned int RBO, FBO, frameBufferTexture, glTextureUnit, Width, Height;
   VAO rectVAO;
   Shader postProcessingShader;
 };

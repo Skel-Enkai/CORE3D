@@ -1,4 +1,4 @@
-#include "Texture.h"
+#include "fs/Texture.h"
 #include <iostream>
 
 Texture::Texture(const char *image, std::string texType, GLint slot)

@@ -1,5 +1,6 @@
-#include "ShadowMap.h"
-#include "Character.h"
+#include "fs/ShadowMap.h"
+#include "fs/Camera.h"
+#include "gs/Character.h"
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/vector_float3.hpp>
@@ -50,21 +51,24 @@ ShadowMap::ShadowMap(unsigned int width,
 
 void ShadowMap::Bind()
 {
+  // Fetches Previous Viewport Size;
+  glGetIntegerv(GL_VIEWPORT, prevViewport);
+  // Binds ShadowMap
   glEnable(GL_DEPTH_TEST);
   glViewport(0, 0, mapWidth, mapHeight);
   glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
   glClear(GL_DEPTH_BUFFER_BIT);
 }
 
-void ShadowMap::Unbind(unsigned int viewWidth, unsigned int viewHeight)
+void ShadowMap::Unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+
+void ShadowMap::UnbindRevert()
 {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glViewport(0, 0, viewWidth, viewHeight);
+  glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
 }
 
 void ShadowMap::DrawToMap(Model &model) { model.DrawShadow(shadowProgram); }
-
-void ShadowMap::DrawToMap(Character &character) { character.DrawShadow(shadowProgram); }
 
 void ShadowMap::AttachMap(std::vector<Shader> shaders)
 {

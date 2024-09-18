@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include "PostProcessFrameBuffer.h"
-#include "VAO.h"
-#include "shaderClass.h"
+#include "ds/VAO.h"
+#include "fs/PostProcessFrameBuffer.h"
+#include "fs/Shader.h"
 
 PostProcessingFrameBuffer::PostProcessingFrameBuffer(std::string vertexFile,
                                                      std::string fragmentFile,
@@ -14,6 +14,8 @@ PostProcessingFrameBuffer::PostProcessingFrameBuffer(std::string vertexFile,
   : postProcessingShader(vertexFile, fragmentFile)
 {
   glTextureUnit = glTextureU;
+  Width = width;
+  Height = height;
 
   rectVAO.Bind();
   VBO rectVBO(rectangleVertices, sizeof(rectangleVertices));
@@ -52,7 +54,11 @@ PostProcessingFrameBuffer::PostProcessingFrameBuffer(std::string vertexFile,
 
 void PostProcessingFrameBuffer::Unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
-void PostProcessingFrameBuffer::Bind() { glBindFramebuffer(GL_FRAMEBUFFER, FBO); }
+void PostProcessingFrameBuffer::Bind()
+{
+  glViewport(0, 0, Width, Height);
+  glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+}
 
 void PostProcessingFrameBuffer::Draw()
 {

@@ -1,9 +1,15 @@
-#include "Camera.h"
+#include "fs/Camera.h"
 
-#include <glm/ext/vector_float3.hpp>
 #include <GLFW/glfw3.h>
+#include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/quaternion_geometric.hpp>
+#include <glm/ext/vector_float3.hpp>
+#include <glm/ext/vector_float4.hpp>
+#include <glm/fwd.hpp>
+#include <glm/gtc/matrix_access.hpp>
+#include <glm/gtc/reciprocal.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/trigonometric.hpp>
 
 /*#include <iostream>*/
 
@@ -14,24 +20,54 @@ Camera::Camera(GLFWwindow *window, glm::vec3 position)
   initialOrientation = Orientation;
 }
 
-void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane)
+Camera::Camera(GLFWwindow *window, unsigned int width, unsigned int height, glm::vec3 position)
+{
+  Width = width;
+  Height = height;
+  Position = position;
+  initialOrientation = Orientation;
+}
+
+void Camera::setMatrices(float FOVdeg, float nearPlane, float farPlane)
 {
   // Forms a view matrix from a Position(Eye), a Direction(Center) and an
   // Orientation(Which way is Up)
   view = glm::lookAt(Position, Position + Orientation, Up);
-  // Forms the perspective matrix with a FOV, a canvas size, nearPlan and
-  // farPlane
   projection = glm::perspective(
     glm::radians(FOVdeg), (static_cast<float>(Width) / static_cast<float>(Height)), nearPlane, farPlane);
-  // Sets new camera matrix
-  cameraMatrix = projection * view;
 
   // Orthographic View Callibration
   /*glm::mat4 orthogonalProjection = glm::ortho(-26.0f, 26.0f, -26.0f, 26.0f, 0.1f, 100.0f);*/
-  /*glm::mat4 lightView = glm::lookAt(glm::vec3(0.0, 15.0, 0.0), glm::vec3(0.0f, 14.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));*/
+  /*glm::mat4 lightView = glm::lookAt(glm::vec3(0.0, 15.0, 0.0), glm::vec3(0.0f, 14.0f, 0.0f), glm::vec3(0.0f,
+   * 0.0f, 1.0f));*/
   /*std::cout << glm::to_string(Position) << glm::to_string(Position + Orientation) << std::endl;*/
   /*cameraMatrix = orthogonalProjection * lightView;*/
 
+  cameraMatrix = projection * view;
+  skyboxMatrix = projection * glm::mat4(glm::mat3(view));
+}
+
+void Camera::updateXYfov(GLfloat fovX, GLfloat fovY)
+{
+  projection[0] = glm::vec4(glm::cot(fovX / 2.0f), 0, 0, 0);
+  projection[1] = glm::vec4(0, glm::cot(fovY / 2.0f), 0, 0);
+}
+
+void Camera::updatePlane(float nearPlane, float farPlane)
+{
+  projection[2] = glm::vec4(0, 0, (nearPlane + farPlane) / (nearPlane - farPlane), -1);
+  projection[3] = glm::vec4(0, 0, (2 * nearPlane * farPlane) / (nearPlane - farPlane), 0);
+}
+
+void Camera::updateView(glm::vec3 position, glm::vec3 direction)
+{
+  // might position + direction might need Callibration (possibly normalisation) research this
+  view = glm::lookAt(position, position + direction, Up);
+}
+
+void Camera::updateMatrix()
+{
+  cameraMatrix = projection * view;
   skyboxMatrix = projection * glm::mat4(glm::mat3(view));
 }
 

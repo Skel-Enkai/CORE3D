@@ -1,7 +1,7 @@
-#include "Mesh.h"
+#include "fs/Mesh.h"
 
-#include "EBO.h"
-#include "VAO.h"
+#include "ds/EBO.h"
+#include "ds/VAO.h"
 #include "glm/fwd.hpp"
 #include <string>
 

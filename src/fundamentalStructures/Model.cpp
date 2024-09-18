@@ -1,4 +1,4 @@
-#include "Model.h"
+#include "fs/Model.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/ext/vector_float4.hpp>
@@ -8,12 +8,12 @@
 #include <vector>
 
 Model::Model(std::string file,
-             unsigned int instanceNum,
-             std::vector<glm::mat4> instanceMatrices,
-             std::vector<glm::mat4> rotationMatrices,
              glm::vec3 scale,
              glm::vec3 trans,
-             glm::quat rot)
+             glm::quat rot,
+             unsigned int instanceNum,
+             std::vector<glm::mat4> instanceMatrices,
+             std::vector<glm::mat4> rotationMatrices)
 {
   std::string text = get_file_contents(file.c_str());
   JSON = json::parse(text);
@@ -28,6 +28,42 @@ Model::Model(std::string file,
   Model::rotation = rot;
   Model::position = trans;
   Model::scale = scale;
+  Model::textures = getTextures();
+
+  unsigned int initIndex = 0;
+  json nodes = JSON["nodes"];
+  for (unsigned int i = 0; i < nodes.size(); i++)
+  {
+    // I don't fully understand Itertors yet, this might be a bit hacky!
+    if (*nodes[i].find("name") == "root")
+    {
+      initIndex = i;
+    }
+  }
+  traverseNode(initIndex);
+}
+
+// TO DO: Make Instanced Model Class seperate.
+Model::Model(std::string file,
+             unsigned int instanceNum,
+             std::vector<glm::mat4> instanceMatrices,
+             std::vector<glm::mat4> rotationMatrices)
+{
+  std::string text = get_file_contents(file.c_str());
+  JSON = json::parse(text);
+
+  Model::file = file;
+  data = getData();
+
+  Model::instancing = instanceNum;
+  Model::instanceMatrices = instanceMatrices;
+  Model::rotationMatrices = rotationMatrices;
+
+  // TO DO: Make Instanced Class, which doesn't need these placeholder values.
+  Model::rotation = glm::quat(1.0, 0.0, 0.0, 0.0);
+  Model::position = glm::vec3(0.0, 0.0, 0.0);
+  Model::scale = glm::vec3(1.0, 1.0, 1.0);
+
   Model::textures = getTextures();
 
   unsigned int initIndex = 0;

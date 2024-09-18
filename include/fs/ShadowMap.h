@@ -10,10 +10,10 @@
 #include <glm/mat4x4.hpp>
 #include <vector>
 
-#include "Character.h"
+#include "gs/Character.h"
 #include "GlobalConstants.h"
-#include "Model.h"
-#include "shaderClass.h"
+#include "fs/Model.h"
+#include "fs/Shader.h"
 
 class ShadowMap
 {
@@ -26,12 +26,13 @@ public:
             glm::vec3 direction = glm::vec3(0.0, -1.0, 0.0),
             std::string shadowVertex = shaderPath + "shadowmaps/shadowMap.vert");
   void Bind();
-  void Unbind(unsigned int viewWidth, unsigned int viewHeight);
+  void Unbind();
+  void UnbindRevert();
   void DrawToMap(Model &model);
-  void DrawToMap(Character &character);
   void AttachMap(std::vector<Shader> shaders);
 
 private:
+  GLint prevViewport[4];
   unsigned int shadowMapFBO, glTexUnit, mapWidth, mapHeight;
   glm::mat4 orthogonalProjection = glm::ortho(-26.0f, 26.0f, -26.0f, 26.0f, 0.1f, 100.0f);
   glm::mat4 lightView, lightProjection;

@@ -1,8 +1,8 @@
 #ifndef MESH_CLASS_H
 #define MESH_CLASS_H
 
-#include "Camera.h"
-#include "VAO.h"
+#include "fs/Camera.h"
+#include "ds/VAO.h"
 
 #include <glm/fwd.hpp>
 #include <vector>

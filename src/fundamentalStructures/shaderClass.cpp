@@ -1,4 +1,4 @@
-#include "shaderClass.h"
+#include "fs/Shader.h"
 
 #include <cerrno>
 #include <fstream>
@@ -6,6 +6,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <string>
+
+// TO DO: make error handling when Shader file is not found or invalid.
 
 std::string get_file_contents(const char *filename)
 {

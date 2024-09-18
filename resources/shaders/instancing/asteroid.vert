@@ -13,6 +13,7 @@ out DATA
   vec3 Colour;
   vec2 TexCoord;
   mat4 projection;
+  mat4 lightProjection;
 } data_out;
 
 // The final view matrix formed by the Camera 

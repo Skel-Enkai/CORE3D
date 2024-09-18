@@ -1,21 +1,18 @@
 #ifndef CHARACTER_CLASS_H
 #define CHARACTER_CLASS_H
 
-#include "Model.h"
-#include "shaderClass.h"
+#include "fs/Model.h"
+#include "fs/Shader.h"
 
 #include <GLFW/glfw3.h>
 #include <string>
 
-class Character
+class Character : public Model
 {
 public:
   Camera CharacterCamera;
-  Model CharacterModel;
   Character(GLFWwindow *window, std::string modelPath);
   void Draw(Shader &shader);
-  void Draw(Shader &shader, Camera &camera);
-  void DrawShadow(Shader &shader);
   void Update(GLFWwindow *window, float FOVdeg, float nearPlane, float farPlane);
 
   glm::vec3 positionOffset = glm::vec3(0.0, 0.0, 0.0);

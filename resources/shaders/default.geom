@@ -18,8 +18,6 @@ in DATA
   mat4 lightProjection;
 } data_in[];
 
-
-
 void main()
 {
   FragPosLight =  data_in[0].lightProjection * gl_in[0].gl_Position;

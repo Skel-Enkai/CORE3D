@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
+#include <vector>
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -17,23 +18,25 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/trigonometric.hpp>
-#include <stb/stb_image.h>
-#include <vector>
+#include <libraries/stb/stb_image.h>
 
-#include "Camera.h"
-#include "Character.h"
-#include "PostProcessFrameBuffer.h"
-#include "ShadowMap.h"
-#include "Skybox.h"
 #include "GlobalConstants.h"
-#include "glm/ext/vector_float3.hpp"
-#include "shaderClass.h"
+#include "ds/DrawObjects.h"
+#include "fs/Camera.h"
+#include "fs/PostProcessFrameBuffer.h"
+#include "fs/Shader.h"
+#include "fs/ShadowMap.h"
+#include "fs/Skybox.h"
+#include "gs/Character.h"
+#include "gs/Mirror.h"
 
 const unsigned short width = 2000;
 const unsigned short height = 1200;
 
-const unsigned short cameraWidth = 1200;
-const unsigned short cameraHeight = 1200;
+const unsigned short cameraHeight = 1024 * 3;
+const unsigned short cameraWidth = 400 * 3;
+
+const GLushort skyboxTex = 100;
 
 const unsigned short antiAliasingSamples = 8;
 
@@ -47,19 +50,17 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
 {
   Shader shaderProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "default.frag"));
   Shader playerProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "player.frag"));
-  Shader mirrorProgram((shaderPath + "mirror.vert"), (shaderPath + "post-processing/anti-aliasing-mirror.frag"));
   Shader grassProgram((shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "grass.frag"));
-  Shader skyboxProgram((shaderPath + "skybox/skybox.vert"), (shaderPath + "skybox/skybox.frag"));
-
   /*Shader reflectionProgram(*/
   /*  (shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "skybox/reflection.frag"));*/
-  /*Shader refractionProgram(*/
-  /*  (shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "skybox/refraction.frag"));*/
+  Shader refractionProgram(
+    (shaderPath + "default.vert"), (shaderPath + "default.geom"), (shaderPath + "skybox/refraction.frag"));
   /*Shader explosionProgram(*/
   /*  (shaderPath + "default.vert"), (shaderPath + "effects/explosion.geom"), (shaderPath + "default.frag"));*/
   // Debugging Shader
-  Shader normalsProgram(
-    (shaderPath + "debugging/normals.vert"), (shaderPath + "debugging/normals.geom"), (shaderPath + "debugging/normals.frag"));
+  Shader normalsProgram((shaderPath + "debugging/normals.vert"),
+                        (shaderPath + "debugging/normals.geom"),
+                        (shaderPath + "debugging/normals.frag"));
 
   // Generate light colour and position
   glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -74,22 +75,15 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
   playerProgram.setVec4("lightColor", lightColor);
   playerProgram.setVec3("lightPos", lightPos);
 
-  mirrorProgram.Activate();
-  mirrorProgram.setInt("multiSampler0", 99);
-  mirrorProgram.setInt("texSamples", antiAliasingSamples);
-
   grassProgram.Activate();
   grassProgram.setVec4("lightColor", lightColor);
   grassProgram.setVec3("lightPos", lightPos);
 
-  skyboxProgram.Activate();
-  skyboxProgram.setInt("skybox", 100);
-
   /*reflectionProgram.Activate();*/
-  /*reflectionProgram.setInt("skybox", 100);*/
+  /*reflectionProgram.setInt("skybox", skyboxTex);*/
 
-  /*refractionProgram.Activate();*/
-  /*refractionProgram.setInt("skybox", 100);*/
+  refractionProgram.Activate();
+  refractionProgram.setInt("skybox", skyboxTex);
 
   /*explosionProgram.Activate();*/
   /*explosionProgram.setVec4("lightColor", lightColor);*/
@@ -104,59 +98,31 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
   glDepthFunc(GL_LESS);
   glClearColor(0.12f, 0.10f, 0.21f, 1.0f);
 
-  Model mirror(
-    modelPath + "mirror_blender/mirror.gltf", 1, {}, {}, glm::vec3(0.02, 0.02, 0.02), glm::vec3(0.0, 0.0, 0.0));
+  Mirror mirror(
+    modelPath + "mirror_blender/mirror.gltf", window, cameraWidth, cameraHeight, 99, glm::vec3(0.02, 0.02, 0.02));
   Model grassground(modelPath + "grassground/scene.gltf");
   Model grass(modelPath + "grass/scene.gltf");
-  Model ship(modelPath + "spaceship/scene.gltf", 1, {}, {},
+  Model ship(modelPath + "spaceship/scene.gltf",
              glm::vec3(1, 1, 1),
              glm::vec3(8.0, 5, 10.0),
              glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0)));
-  Model statue(modelPath + "statue/scene.gltf", 1, {}, {}, glm::vec3(8, 8, 8), glm::vec3(-5, 10.0, 10.0));
+  Model statue(modelPath + "statue/scene.gltf", glm::vec3(8, 8, 8), glm::vec3(-5, 10.0, 10.0));
 
-  // Set View from the Mirror
-  Camera mirrorView(window, glm::vec3(2.102342, 4.342332, -6.394495));
-  mirrorView.Orientation = glm::normalize(glm::vec3(-0.312417, 0.201481, 0.928328));
-  mirrorView.updateMatrix(40.0f, 0.1f, 100.0f);
+  /* This approximation of Orientation and FOV of the mirror and only works when the mirror is far away and not at
+     an extreme angle. To fix this a new FOV and Orientation would need to be calculated based on the Player's
+     position. For realistic results this would need to be calculated when the player and/or mirror moves.
+     FOV would increase as the player approaches the mirror.
+     Orientation will be along the line of reflection from the players view.*/
 
   Character player(window, modelPath + "crow/scene.gltf");
-  player.CharacterModel.scale = glm::vec3(0.4, 0.4, 0.4);
-  player.positionOffset = glm::vec3(1.0, -5.0, 1.5);
+  player.scale = glm::vec3(0.4, 0.4, 0.4);
+  player.positionOffset = glm::vec3(0, -7.0, 0);
   player.rotationOffset = glm::angleAxis(180.0f, glm::vec3(0.0, 1.0, 0.0));
-  player.CharacterCamera.updateMatrix(45.0f, 0.1f, 100.0f);
+  player.CharacterCamera.setMatrices(45.0f, 0.1f, 100.0f);
 
   // FPS counter
   double prevTime = 0.0;
   unsigned int framesPassed = 0;
-
-  // Mirror Frame Buffer
-  // -------------------------------------------------------------------------
-  unsigned int mirrorFBO;
-  glGenFramebuffers(1, &mirrorFBO);
-  glBindFramebuffer(GL_FRAMEBUFFER, mirrorFBO);
-
-  unsigned int frameBufferTexture;
-  glGenTextures(1, &frameBufferTexture);
-  // GL_TEXTURE_2D_MULTISAMPLE for Anti-Aliasing
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, frameBufferTexture);
-  glTexImage2DMultisample(
-    GL_TEXTURE_2D_MULTISAMPLE, antiAliasingSamples, GL_RGB16F, cameraWidth, cameraHeight, GL_TRUE);
-  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, frameBufferTexture, 0);
-
-  unsigned int mirrorRBO;
-  glGenRenderbuffers(1, &mirrorRBO);
-  glBindRenderbuffer(GL_RENDERBUFFER, mirrorRBO);
-  glRenderbufferStorageMultisample(
-    GL_RENDERBUFFER, antiAliasingSamples, GL_DEPTH24_STENCIL8, cameraWidth, cameraHeight);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mirrorRBO);
-
-  auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  if (fboStatus != GL_FRAMEBUFFER_COMPLETE) std::cout << "Framebuffer error: " << fboStatus << std::endl;
-  // --------------------------------------------------------------------------------------------
 
   std::array<std::string, 6> skyboxPaths = {cubemapsPath + "sky/right.jpg",
                                             cubemapsPath + "sky/left.jpg",
@@ -172,11 +138,24 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
                                               cubemapsPath + "seamountains/front.jpg",
                                               cubemapsPath + "seamountains/back.jpg"};
 
-  SkyBox scenebox(skyboxPaths);
+  SkyBox scenebox(skyboxPaths, skyboxTex);
   ShadowMap sceneShadow(4000, 4000, 98, glm::vec3(0.0, 15.0, 0.0));
-  std::vector <Shader> shadowShaders = { grassProgram, shaderProgram, playerProgram };
+  std::vector<Shader> shadowShaders = {grassProgram, shaderProgram, playerProgram};
   sceneShadow.AttachMap(shadowShaders);
-  bool inputMirror = false;
+
+  /*std::vector<Model> shadowDraw = {player, ship, statue, mirror};*/
+
+  std::vector<DrawObject> mirrorDraw = {DrawObject{player, playerProgram},
+                                        DrawObject{grassground, shaderProgram},
+                                        DrawObject{grass, grassProgram},
+                                        DrawObject{ship, shaderProgram},
+                                        DrawObject{statue, shaderProgram}};
+
+  /*std::vector<DrawObject> sceneDraw = {DrawObject{mirror, shaderProgram},*/
+  /*                                     DrawObject{grassground, shaderProgram},*/
+  /*                                     DrawObject{grass, grassProgram},*/
+  /*                                     DrawObject{statue, shaderProgram},*/
+  /*                                     DrawObject{ship, shaderProgram}};*/
 
   // Main while loop
   while (!glfwWindowShouldClose(window))
@@ -195,45 +174,22 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
       prevTime = currentTime;
       framesPassed = 0;
       /*std::cout << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;*/
-      /*std::cout << glm::to_string(mirrorView.Position) <<
-       * glm::to_string(mirrorView.Orientation) << std::endl;*/
 
       // You could put Input functions in here, as otherwise game time is linked
-      // to FPS, however, this causes tmakmearing as slower update than FPS update.
+      // to FPS, however, this causes tearing as slower update than FPS update.
       // Delta time should be used for accurate results.
     }
+    player.Update(window, 45.0f, 0.1f, 100.0f);
     // Draw to ShadowMap
     sceneShadow.Bind();
     sceneShadow.DrawToMap(player);
     sceneShadow.DrawToMap(ship);
     sceneShadow.DrawToMap(statue);
     sceneShadow.DrawToMap(mirror);
-    sceneShadow.Unbind(width, height);
+    sceneShadow.Unbind();
 
-    glBindFramebuffer(GL_FRAMEBUFFER, mirrorFBO);
-    // Clean the back buffer and assign the new colour to it
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    if (glfwGetKey(window, GLFW_KEY_CAPS_LOCK) == GLFW_PRESS)
-    {
-      inputMirror = !inputMirror;
-    }
-    if (inputMirror)
-    {
-      mirrorView.Inputs(window);
-      mirrorView.updateMatrix(40.0f, 0.1f, 100.0f);
-    }
-    else
-    {
-      player.Update(window, 45.0f, 0.1f, 100.0f);
-    }
-
-    grassground.Draw(shaderProgram, mirrorView);
-    grass.Draw(grassProgram, mirrorView);
-    player.Draw(playerProgram, mirrorView);
-    ship.Draw(shaderProgram, mirrorView);
-    statue.Draw(shaderProgram, mirrorView);
-    scenebox.Draw(skyboxProgram, mirrorView);
+    mirror.UpdateMirror(player.CharacterCamera);
+    mirror.DrawToMirror(mirrorDraw, scenebox);
 
     // Draw to PostProcessor
     postProcessor.Bind();
@@ -241,10 +197,10 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
 
     grassground.Draw(shaderProgram, player.CharacterCamera);
     grass.Draw(grassProgram, player.CharacterCamera);
-    mirror.Draw(shaderProgram, mirrorProgram, frameBufferTexture, player.CharacterCamera);
+    mirror.Draw(shaderProgram, player.CharacterCamera);
     ship.Draw(shaderProgram, player.CharacterCamera);
     statue.Draw(shaderProgram, player.CharacterCamera);
-    scenebox.Draw(skyboxProgram, player.CharacterCamera);
+    scenebox.Draw(player.CharacterCamera);
 
     // Unbind and PostProcess the Image
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -366,7 +322,7 @@ void runSceneTwo(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     camera.Inputs(window);
-    camera.updateMatrix(45.0f, 0.1f, 1000.0f);
+    camera.setMatrices(45.0f, 0.1f, 1000.0f);
 
     jupiter.Draw(shaderProgram, camera);
     asteriod.Draw(asteroidProgram, camera);
@@ -418,7 +374,9 @@ int main()
 
   PostProcessingFrameBuffer postProcessor((shaderPath + "post-processing/framebuffer.vert"),
                                           (shaderPath + "post-processing/post-processor.frag"),
-                                          101, width, height);
+                                          101,
+                                          width,
+                                          height);
 
   runSceneOne(window, postProcessor);
   // Delete window before ending the program

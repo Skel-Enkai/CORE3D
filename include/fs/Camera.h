@@ -10,7 +10,8 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-#include "shaderClass.h"
+#include "fs/Shader.h"
+#include "glm/fwd.hpp"
 
 class Camera
 {
@@ -28,23 +29,28 @@ public:
 
   bool firstClick = true;
 
-  int Width;
-  int Height;
-
   float speed;
   float slowspeed = 0.06f;
   float fastspeed = 0.25f;
   float sensitivity = 20.0f;
 
   Camera(GLFWwindow *window, glm::vec3 position = glm::vec3(0.0, 0.0, 0.0));
+  Camera(GLFWwindow *window, unsigned int width, unsigned int height, glm::vec3 position = glm::vec3(0.0, 0.0, 0.0));
 
   // Updates the camera matrix to the Vertex Shader
-  void updateMatrix(float FOVdeg, float nearPlane, float farPlane);
+  void setMatrices(float FOVdeg, float nearPlane, float farPlane);
+  void updateMatrix();
+  void updateXYfov(GLfloat fovX, GLfloat fovY);
+  void updatePlane(float nearPlane, float farPlane);
+  void updateView(glm::vec3 position, glm::vec3 direction);
   // Exports the camera matrix to a shader
   void setCamMatrix(Shader &shader, const char *uniform);
   void setViewMatrix(Shader &shader, const char *uniform);
   void setSkyboxMatrix(Shader &shader, const char *uniform);
   // Handles camera Inputs
   void Inputs(GLFWwindow *window);
+
+private:
+  int Width, Height;
 };
 #endif

@@ -4,13 +4,18 @@
 #include <array>
 #include <string>
 
-#include "Camera.h"
-#include "VAO.h"
+#include "fs/Camera.h"
+#include "ds/VAO.h"
+#include "fs/Shader.h"
 
 class SkyBox
 {
 public:
-  SkyBox(const std::array<std::string, 6> &arr);
+  SkyBox(const std::array<std::string, 6> &arr, 
+         GLushort texUnit = 100, 
+         std::string vertFile = "skybox/skybox.vert", 
+         std::string fragFile = "skybox/skybox.frag");
+  void Draw(Camera &camera);
   void Draw(Shader &shader, Camera &camera);
 
 private:
@@ -48,6 +53,9 @@ private:
   std::array<std::string, 6> pathsList;
   VAO skyboxVAO;
   unsigned int textureID;
+  GLushort texUnit;
+
+  Shader skyboxShader;
 };
 
 #endif

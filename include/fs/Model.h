@@ -6,9 +6,9 @@
 #include <string>
 #include <vector>
 
-#include "Mesh.h"
-#include "Texture.h"
-#include "shaderClass.h"
+#include "fs/Mesh.h"
+#include "fs/Shader.h"
+#include "fs/Texture.h"
 
 using json = nlohmann::json;
 
@@ -16,29 +16,28 @@ class Model
 {
 public:
   Model(std::string file,
-        unsigned int instancing = 1,
-        std::vector<glm::mat4> instanceMatrix = {},
-        std::vector<glm::mat4> rotationMatrices = {},
         glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0),
         glm::vec3 translation = glm::vec3(1.0, 1.0, 1.0),
-        glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0));
+        glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0),
+        unsigned int instancing = 1,
+        std::vector<glm::mat4> instanceMatrix = {},
+        std::vector<glm::mat4> rotationMatrices = {});
+
+  Model(std::string file,
+        unsigned int instancing,
+        std::vector<glm::mat4> instanceMatrix,
+        std::vector<glm::mat4> rotationMatrices);
 
   void Draw(Shader &shader, Camera &camera);
   void Draw(Shader &shader, Shader &secondaryShader, unsigned int mirrorTexture, Camera &camera);
   void DrawShadow(Shader &shader);
 
-  void SetTextures(Shader &shader);
-
   glm::vec3 position = glm::vec3(1.0, 1.0, 1.0);
   glm::quat rotation = glm::quat(1.0, 0.0, 0.0, 0.0);
   glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
 
-private:
-  std::string file;
-  std::vector<unsigned char> data;
-  json JSON;
-
-  unsigned int instancing;
+protected:
+  void SetTextures(Shader &shader);
 
   std::vector<Mesh> meshes;
   std::vector<glm::vec3> translationsMeshes;
@@ -47,6 +46,13 @@ private:
   std::vector<glm::mat4> matricesMeshes;
   std::vector<glm::mat4> instanceMatrices;
   std::vector<glm::mat4> rotationMatrices;
+
+private:
+  std::string file;
+  std::vector<unsigned char> data;
+  json JSON;
+
+  unsigned int instancing;
 
   std::vector<Texture> textures;
 
