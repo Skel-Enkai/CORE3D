@@ -1,8 +1,7 @@
 #include <iostream>
+#include <vector>
 
-#include "ds/VAO.h"
 #include "fs/PostProcessFrameBuffer.h"
-#include "fs/Shader.h"
 
 PostProcessingFrameBuffer::PostProcessingFrameBuffer(std::string vertexFile,
                                                      std::string fragmentFile,
@@ -60,8 +59,41 @@ void PostProcessingFrameBuffer::Bind()
   glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 }
 
+void PostProcessingFrameBuffer::DrawToBuffer(Camera &camera, std::vector<DrawObject> drawingList, SkyBox skybox)
+{
+  Bind();
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  for (unsigned int i = 0; i < drawingList.size(); i++)
+  {
+    DrawObject temp = drawingList[i];
+    temp.model.Draw(temp.shader, camera);
+  }
+  skybox.Draw(camera);
+  Unbind();
+}
+
+void PostProcessingFrameBuffer::DrawToBuffer(Camera &camera, std::vector<DrawObject> drawingList, std::vector<MirrorObject> mirrors, SkyBox skybox)
+{
+  Bind();
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  for (unsigned int i = 0; i < drawingList.size(); i++)
+  {
+    DrawObject temp = drawingList[i];
+    temp.model.Draw(temp.shader, camera);
+  }
+  for (unsigned int i = 0; i < mirrors.size(); i++)
+  {
+    MirrorObject temp = mirrors[i];
+    temp.mirror.Draw(temp.shader, camera);
+  }
+  skybox.Draw(camera);
+  Unbind();
+}
+
 void PostProcessingFrameBuffer::Draw()
 {
+  glViewport(0, 0, Width, Height);
+
   glActiveTexture(GL_TEXTURE0 + glTextureUnit);
   glBindTexture(GL_TEXTURE_2D, frameBufferTexture);
 

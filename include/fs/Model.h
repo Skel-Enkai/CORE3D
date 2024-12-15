@@ -1,6 +1,8 @@
 #ifndef MODEL_CLASS_H
 #define MODEL_CLASS_H
 
+#include <glad/glad.h>
+
 #include <glm/fwd.hpp>
 #include <json/json.h>
 #include <string>
@@ -29,7 +31,6 @@ public:
         std::vector<glm::mat4> rotationMatrices);
 
   void Draw(Shader &shader, Camera &camera);
-  void Draw(Shader &shader, Shader &secondaryShader, unsigned int mirrorTexture, Camera &camera);
   void DrawShadow(Shader &shader);
 
   glm::vec3 position = glm::vec3(1.0, 1.0, 1.0);

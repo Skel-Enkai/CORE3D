@@ -1,6 +1,7 @@
 #include "fs/Camera.h"
 
 #include <GLFW/glfw3.h>
+#include <cstdlib>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/quaternion_geometric.hpp>
 #include <glm/ext/vector_float3.hpp>

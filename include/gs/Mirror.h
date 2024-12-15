@@ -3,10 +3,11 @@
 
 #include <glad/glad.h>
 
-#include "ds/DrawObjects.h"
+#include "ds/DrawObject.h"
 #include "fs/Camera.h"
 #include "fs/Model.h"
 #include "fs/Skybox.h"
+
 #include <GLFW/glfw3.h>
 #include <glm/fwd.hpp>
 #include <vector>
@@ -43,7 +44,7 @@ private:
   glm::vec3 right = glm::vec3(0.0, 0.0, 0.0);
   glm::vec3 left = glm::vec3(0.0, 0.0, 0.0);
   glm::vec3 middle = glm::vec3(0.0, 0.0, 0.0);
-  GLuint mirrorFBO, frameBufferTexture, mirrorRBO;
+  GLuint mirrorFBO, mirrorTexture, mirrorRBO;
   GLushort antiAliasingSamples;
   unsigned int Width, Height, meshIndex;
   glm::mat4 mirrorMatrix;

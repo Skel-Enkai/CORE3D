@@ -93,22 +93,6 @@ void Model::Draw(Shader &shader, Camera &camera)
                          scalesMeshes[i] * scale);
 }
 
-void Model::Draw(Shader &shader, Shader &secondaryShader, unsigned int mirrorTexture, Camera &camera)
-{
-  shader.Activate();
-  shader.setFloat("time", glfwGetTime());
-  SetTextures(shader);
-  for (unsigned int i = 0; i < meshes.size(); i++)
-    meshes[i].Mesh::Draw(shader,
-                         secondaryShader,
-                         mirrorTexture,
-                         camera,
-                         matricesMeshes[i],
-                         translationsMeshes[i] + position,
-                         rotationsMeshes[i] * rotation,
-                         scalesMeshes[i] * scale);
-}
-
 void Model::DrawShadow(Shader &shader)
 {
   shader.Activate();

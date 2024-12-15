@@ -4,9 +4,12 @@
 #include <glad/glad.h>
 
 #include <GLFW/glfw3.h>
-
+#include <vector>
+#include "ds/DrawObject.h"
+#include "ds/MirrorObject.h"
 #include "ds/VAO.h"
 #include "fs/Shader.h"
+#include "fs/Skybox.h"
 
 class PostProcessingFrameBuffer
 {
@@ -20,6 +23,8 @@ public:
                             float gammaCorrection = 2.2);
   void Bind();
   void Unbind();
+  void DrawToBuffer(Camera &camera, std::vector<DrawObject> drawingList, SkyBox skybox);
+  void DrawToBuffer(Camera &camera, std::vector<DrawObject> drawingList, std::vector<MirrorObject> mirrorList, SkyBox skybox);
   void Draw();
   void DrawTexture(unsigned int texUnit);
 

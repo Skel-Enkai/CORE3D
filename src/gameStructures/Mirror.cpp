@@ -91,25 +91,23 @@ Mirror::Mirror(std::string file,
   reflectionMatrix[3] =
     glm::vec4(2 * D * reflectionNormal.x, 2 * D * reflectionNormal.y, 2 * D * reflectionNormal.z, 1.0);
 
-  // Temp
-  mirrorView.Orientation = reflectionNormal;
-  mirrorView.Position = glm::vec3(0.0, 8.3, -6.38);
+  // Initialise Mirror Plane
   mirrorView.updatePlane(near, far);
 
   // Create Mirror Framebuffer
   glGenFramebuffers(1, &mirrorFBO);
-  glGenTextures(1, &frameBufferTexture);
+  glGenTextures(1, &mirrorTexture);
 
   glBindFramebuffer(GL_FRAMEBUFFER, mirrorFBO);
   glActiveTexture(GL_TEXTURE0 + texUnit);
   // GL_TEXTURE_2D_MULTISAMPLE for Anti-Aliasing
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, frameBufferTexture);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mirrorTexture);
   glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, antiAliasingSamples, GL_RGB16F, Width, Height, GL_TRUE);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, frameBufferTexture, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, mirrorTexture, 0);
 
   glGenRenderbuffers(1, &mirrorRBO);
   glBindRenderbuffer(GL_RENDERBUFFER, mirrorRBO);
@@ -122,9 +120,8 @@ Mirror::Mirror(std::string file,
 
 void Mirror::Bind()
 {
-  glBindFramebuffer(GL_FRAMEBUFFER, mirrorFBO);
   glViewport(0, 0, Width, Height);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glBindFramebuffer(GL_FRAMEBUFFER, mirrorFBO);
 }
 
 void Mirror::Unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
@@ -154,9 +151,11 @@ void Mirror::UpdateMirror(Camera &camera)
 void Mirror::DrawToMirror(std::vector<DrawObject> DrawList, SkyBox skybox)
 {
   Bind();
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   for (unsigned int i = 0; i < DrawList.size(); i++)
   {
-    DrawList[i].model.Draw(DrawList[i].shader, mirrorView);
+    DrawObject temp = DrawList[i];
+    temp.model.Draw(temp.shader, mirrorView);
   }
   skybox.Draw(mirrorView);
   Unbind();
@@ -170,6 +169,7 @@ void Mirror::Draw(Shader &shader, Camera &camera)
   for (unsigned int i = 0; i < meshes.size(); i++)
     meshes[i].Mesh::Draw(shader,
                          mirrorShader,
+                         mirrorTexture,
                          texUnit,
                          camera,
                          matricesMeshes[i],

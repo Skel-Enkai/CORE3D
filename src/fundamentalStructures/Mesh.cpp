@@ -121,7 +121,8 @@ void Mesh::Draw(
 
 void Mesh::Draw(Shader &primaryShader,
                 Shader &secondaryShader,
-                unsigned int mirrorTexture,
+                GLuint mirrorTexture,
+                GLushort texUnit, 
                 Camera &camera,
                 glm::mat4 matrix,
                 glm::vec3 translation,
@@ -138,7 +139,7 @@ void Mesh::Draw(Shader &primaryShader,
   {
     secondaryShader.Activate();
 
-    glActiveTexture(GL_TEXTURE0 + 99);
+    glActiveTexture(GL_TEXTURE0 + texUnit);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mirrorTexture);
     // Take care of the Camera Matrix
     secondaryShader.setVec3("camPos", camera.Position);

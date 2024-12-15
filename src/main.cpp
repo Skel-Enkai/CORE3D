@@ -21,7 +21,8 @@
 #include <libraries/stb/stb_image.h>
 
 #include "GlobalConstants.h"
-#include "ds/DrawObjects.h"
+#include "ds/DrawObject.h"
+#include "ds/MirrorObject.h"
 #include "fs/Camera.h"
 #include "fs/PostProcessFrameBuffer.h"
 #include "fs/Shader.h"
@@ -108,12 +109,6 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
              glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0)));
   Model statue(modelPath + "statue/scene.gltf", glm::vec3(8, 8, 8), glm::vec3(-5, 10.0, 10.0));
 
-  /* This approximation of Orientation and FOV of the mirror and only works when the mirror is far away and not at
-     an extreme angle. To fix this a new FOV and Orientation would need to be calculated based on the Player's
-     position. For realistic results this would need to be calculated when the player and/or mirror moves.
-     FOV would increase as the player approaches the mirror.
-     Orientation will be along the line of reflection from the players view.*/
-
   Character player(window, modelPath + "crow/scene.gltf");
   player.scale = glm::vec3(0.4, 0.4, 0.4);
   player.positionOffset = glm::vec3(0, -7.0, 0);
@@ -143,19 +138,21 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
   std::vector<Shader> shadowShaders = {grassProgram, shaderProgram, playerProgram};
   sceneShadow.AttachMap(shadowShaders);
 
-  /*std::vector<Model> shadowDraw = {player, ship, statue, mirror};*/
+  /*std::vector<Model*> shadowDraw = {&player, &ship, &statue, &mirror};*/
 
   std::vector<DrawObject> mirrorDraw = {DrawObject{player, playerProgram},
                                         DrawObject{grassground, shaderProgram},
                                         DrawObject{grass, grassProgram},
-                                        DrawObject{ship, shaderProgram},
+                                        DrawObject{ship, refractionProgram},
                                         DrawObject{statue, shaderProgram}};
 
-  /*std::vector<DrawObject> sceneDraw = {DrawObject{mirror, shaderProgram},*/
-  /*                                     DrawObject{grassground, shaderProgram},*/
-  /*                                     DrawObject{grass, grassProgram},*/
-  /*                                     DrawObject{statue, shaderProgram},*/
-  /*                                     DrawObject{ship, shaderProgram}};*/
+  std::vector<DrawObject> sceneDraw = {DrawObject{grassground, shaderProgram},
+                                       DrawObject{grass, grassProgram},
+                                       DrawObject{statue, shaderProgram},
+                                       DrawObject{statue, normalsProgram},
+                                       DrawObject{ship, refractionProgram}};
+
+  std::vector<MirrorObject> sceneMirrors = {MirrorObject{mirror, shaderProgram}};
 
   // Main while loop
   while (!glfwWindowShouldClose(window))
@@ -188,22 +185,11 @@ void runSceneOne(GLFWwindow *window, PostProcessingFrameBuffer postProcessor)
     sceneShadow.DrawToMap(mirror);
     sceneShadow.Unbind();
 
+    // Update and Draw Mirror
     mirror.UpdateMirror(player.CharacterCamera);
     mirror.DrawToMirror(mirrorDraw, scenebox);
 
-    // Draw to PostProcessor
-    postProcessor.Bind();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    grassground.Draw(shaderProgram, player.CharacterCamera);
-    grass.Draw(grassProgram, player.CharacterCamera);
-    mirror.Draw(shaderProgram, player.CharacterCamera);
-    ship.Draw(shaderProgram, player.CharacterCamera);
-    statue.Draw(shaderProgram, player.CharacterCamera);
-    scenebox.Draw(player.CharacterCamera);
-
-    // Unbind and PostProcess the Image
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    postProcessor.DrawToBuffer(player.CharacterCamera, sceneDraw, sceneMirrors, scenebox);
     postProcessor.Draw();
 
     glfwSwapBuffers(window);
